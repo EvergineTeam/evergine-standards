@@ -146,10 +146,17 @@ function Resolve-Dst([string]$src, [string]$dstDefault, [string]$overwriteDefaul
         }
         
         if ($remapValue) {
-            # Object format with dst and optionally overwrite
-            $newDst = if ($remapValue.PSObject.Properties.Name -contains 'dst') { $remapValue.dst } else { $dstDefault }
-            $newOverwrite = if ($remapValue.PSObject.Properties.Name -contains 'overwrite') { $remapValue.overwrite } else { $overwriteDefault }
-            return @{ dst = $newDst; overwrite = $newOverwrite }
+            # Handle both string format ("dst": "path") and object format ("dst": {"dst": "path", "overwrite": "..."})
+            if ($remapValue -is [string]) {
+                # Simple string format - just the new destination path
+                return @{ dst = $remapValue; overwrite = $overwriteDefault }
+            }
+            else {
+                # Object format with dst and optionally overwrite
+                $newDst = if ($remapValue.PSObject.Properties.Name -contains 'dst') { $remapValue.dst } else { $dstDefault }
+                $newOverwrite = if ($remapValue.PSObject.Properties.Name -contains 'overwrite') { $remapValue.overwrite } else { $overwriteDefault }
+                return @{ dst = $newDst; overwrite = $newOverwrite }
+            }
         }
     }
 
