@@ -54,7 +54,7 @@ It handles the synchronization logic:
 Repositories consume it using:
 
 ```yaml
-uses: EvergineTeam/evergine-standards/.github/workflows/_sync-standards-reusable.yml
+uses: EvergineTeam/evergine-standards/.github/workflows/_sync-standards-reusable.yml@main
 ```
 
 > The reusable workflow executes **in the context of the target repository**, not in `evergine-standards`.
@@ -75,7 +75,7 @@ on:
 
 jobs:
   sync:
-    uses: EvergineTeam/evergine-standards/.github/workflows/_sync-standards-reusable.yml
+    uses: EvergineTeam/evergine-standards/.github/workflows/_sync-standards-reusable.yml@main
     with:
       org:  "EvergineTeam"
       repo: "evergine-standards"
