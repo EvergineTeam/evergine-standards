@@ -1,0 +1,102 @@
+name: Sync Standards Reusable
+
+on:
+  workflow_call:
+    inputs:
+      org:
+        description: "Organization of the standards repository"
+        default: "EvergineTeam"
+        required: false
+        type: string
+      repo:
+        description: "Name of the standards repository" 
+        default: "evergine-standards"
+        required: false
+        type: string
+      ref:
+        description: "Branch, tag, or commit to sync from"
+        default: "main"
+        required: false
+        type: string
+      target_branch:
+        description: "Branch to apply changes to"
+        default: "main"
+        required: false
+        type: string
+      commit_message:
+        description: "Commit message to use"
+        required: false
+        default: ""
+        type: string
+      mode:
+        description: "auto (push then PR if needed) or pr (always PR)"
+        default: "auto"
+        required: false
+        type: string
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write      # allow push commits
+      pull-requests: write # allow creating pull requests
+
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.target_branch }}
+
+      - name: Run standards sync
+        shell: pwsh
+        run: |
+          ./tools/sync-standards.ps1 `
+            -Org "${{ inputs.org }}" `
+            -Repo "${{ inputs.repo }}" `
+            -Ref "${{ inputs.ref }}"
+
+      - name: Stage changes
+        shell: bash
+        run: |
+          git add -A
+          if git diff --cached --quiet; then
+            echo "CHANGES=false" >> $GITHUB_ENV
+          else
+            echo "CHANGES=true" >> $GITHUB_ENV
+          fi
+
+      # https://github.com/actions/checkout?tab=readme-ov-file#push-a-commit-using-the-built-in-token 
+      - name: Commit (if any)
+        if: env.CHANGES == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "${{ inputs.commit_message }}"
+
+      # Direct push if there are changes and mode is auto
+      - name: Try direct push
+        if: env.CHANGES == 'true' && inputs.mode == 'auto' && github.event.repository.fork != true
+        id: direct
+        continue-on-error: true
+        run: |
+          git push
+          echo "exit_code=$?" >> $GITHUB_OUTPUT
+
+      # If push fails (e.g. protected branch) or if forced mode=pr → open PR
+      - name: Create Pull Request
+        if: >
+          env.CHANGES == 'true' && (
+            inputs.mode == 'pr' ||
+            github.event.repository.fork == true ||
+            steps.direct.outcome == 'failure' ||
+            steps.direct.outputs.exit_code != '' && steps.direct.outputs.exit_code != '0'
+          )
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: chore/sync-standards
+          title: "Sync standards"
+          body: "Automated update of shared standard files."
+          commit-message: "${{ inputs.commit_message }}"
+          labels: standards
+          signoff: false
+          delete-branch: true
