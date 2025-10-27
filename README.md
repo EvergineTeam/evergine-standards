@@ -1,5 +1,7 @@
 # Evergine standards
 
+[![CI](https://github.com/EvergineTeam/evergine-standards/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/EvergineTeam/evergine-standards/actions/workflows/ci.yml)
+
 Shared standards and static assets for Evergine repositories — including the NuGet package icon, license file, and synchronization tools for keeping all repositories aligned.
 
 ---
