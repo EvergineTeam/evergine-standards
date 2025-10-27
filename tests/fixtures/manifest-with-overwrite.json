@@ -1,0 +1,15 @@
+{
+    "schema": "1",
+    "files": [
+        {
+            "src": "config.json",
+            "dst": "config.json",
+            "overwrite": "ifMissing"
+        },
+        {
+            "src": "docs/readme.md",
+            "dst": "docs/readme.md",
+            "overwrite": "always"
+        }
+    ]
+}

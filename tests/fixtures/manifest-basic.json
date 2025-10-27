@@ -1,0 +1,17 @@
+{
+    "schema": "1",
+    "files": [
+        {
+            "src": "LICENSE",
+            "dst": "LICENSE"
+        },
+        {
+            "src": "README.md",
+            "dst": "README.md"
+        },
+        {
+            "src": "assets/icon.png",
+            "dst": "assets/icon.png"
+        }
+    ]
+}

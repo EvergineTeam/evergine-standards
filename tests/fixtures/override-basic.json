@@ -1,0 +1,15 @@
+{
+    "schema": "1",
+    "remap": {
+        "LICENSE": "CUSTOM-LICENSE",
+        "README.md": {
+            "dst": "docs/README.md",
+            "overwrite": "ifMissing"
+        },
+        "assets/icon.png": "images/logo.png"
+    },
+    "ignore": [
+        "*.tmp",
+        "temp/*"
+    ]
+}

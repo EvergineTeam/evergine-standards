@@ -1,0 +1,72 @@
+# Reusable workflow for testing sync-standards.ps1
+# Can be called from other workflows to run the test suite
+
+name: Test sync-standards (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      test-filter:
+        description: 'Filter tests by name pattern (optional)'
+        required: false
+        type: string
+        default: '*'
+      unit-only:
+        description: 'Run only unit tests'
+        required: false
+        type: boolean
+        default: false
+      integration-only:
+        description: 'Run only integration tests'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup PowerShell and Pester
+      shell: pwsh
+      run: |
+        # Install Pester 5.7.1+ for consistency with local development
+        Install-Module -Name Pester -Force -SkipPublisherCheck -Scope CurrentUser -AllowClobber
+        Write-Host "Pester installed successfully" -ForegroundColor Green
+        
+    - name: Run sync-standards Tests
+      shell: pwsh
+      run: |
+        # Build test command with parameters
+        $testCmd = ".\tests\Run-Tests.ps1 -OutputFile 'test-results.xml' -OutputFormat 'JUnitXml'"
+        
+        if ("${{ inputs.unit-only }}" -eq "true") {
+          $testCmd += " -UnitOnly"
+        }
+        if ("${{ inputs.integration-only }}" -eq "true") {
+          $testCmd += " -IntegrationOnly"  
+        }
+        if ("${{ inputs.test-filter }}" -ne "*" -and "${{ inputs.test-filter }}" -ne "") {
+          $testCmd += " -TestName '${{ inputs.test-filter }}'"
+        }
+        
+        Write-Host "Executing: $testCmd" -ForegroundColor Cyan
+        Invoke-Expression $testCmd
+        
+    - name: Publish Test Results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: sync-standards Tests
+        path: test-results.xml
+        reporter: java-junit
+        
+    - name: Upload Test Results as Artifact
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: sync-standards-test-results
+        path: test-results.xml

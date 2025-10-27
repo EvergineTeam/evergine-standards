@@ -1,0 +1,15 @@
+# Main CI workflow for evergine-standards repository
+# Runs comprehensive tests for sync-standards.ps1 script
+
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Run Tests
+    uses: ./.github/workflows/_test-sync-standards.yml
