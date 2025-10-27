@@ -1,15 +1,35 @@
 {
-    "schema": "1",
-    "files": [
-        {
-            "src": "config.json",
-            "dst": "config.json",
-            "overwrite": "ifMissing"
-        },
-        {
-            "src": "docs/readme.md",
-            "dst": "docs/readme.md",
-            "overwrite": "always"
-        }
-    ]
+    "schema": "2",
+    "defaultGroups": [
+        "core",
+        "build"
+    ],
+    "groups": {
+        "core": [
+            {
+                "src": "config.json",
+                "dst": "config.json",
+                "overwrite": "ifMissing"
+            },
+            {
+                "src": "docs/readme.md",
+                "dst": "docs/readme.md",
+                "overwrite": "always"
+            }
+        ],
+        "build": [
+            {
+                "src": "build.ps1",
+                "dst": "build.ps1",
+                "overwrite": "always"
+            }
+        ],
+        "ci": [
+            {
+                "src": ".github/workflows/ci.yml",
+                "dst": ".github/workflows/ci.yml",
+                "overwrite": "ifMissing"
+            }
+        ]
+    }
 }

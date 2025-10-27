@@ -1,5 +1,9 @@
 {
-    "schema": "1",
+    "schema": "2",
+    "groups": [
+        "core",
+        "docs"
+    ],
     "remap": {
         "LICENSE": "CUSTOM-LICENSE",
         "README.md": {

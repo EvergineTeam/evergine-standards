@@ -147,3 +147,155 @@ Describe "Is-Ignored Function" {
         }
     }
 }
+
+Describe "Schema v2 Groups Processing" {
+    Context "Manifest with schema v2 and defaultGroups" {
+        It "Should process defaultGroups when no override groups specified" {
+            # Test manifest processing logic for schema v2
+            $manifestObj = [PSCustomObject]@{
+                schema        = "2"
+                defaultGroups = @("core", "docs")
+                groups        = [PSCustomObject]@{
+                    core = @(
+                        [PSCustomObject]@{ src = "LICENSE"; dst = "LICENSE" }
+                        [PSCustomObject]@{ src = "README.md"; dst = "README.md" }
+                    )
+                    docs = @(
+                        [PSCustomObject]@{ src = "docs/guide.md"; dst = "docs/guide.md" }
+                    )
+                    ci   = @(
+                        [PSCustomObject]@{ src = ".github/workflows/ci.yml"; dst = ".github/workflows/ci.yml" }
+                    )
+                }
+            }
+            
+            # Simulate no override file (overwrites = null)
+            $global:overwrites = $null
+            
+            # Determine selected groups (simulating script logic)
+            $selectedGroups = @()
+            if ($global:overwrites -and $global:overwrites.PSObject.Properties.Name -contains 'groups') {
+                $selectedGroups = $global:overwrites.groups
+            }
+            elseif ($manifestObj.PSObject.Properties.Name -contains 'defaultGroups') {
+                $selectedGroups = $manifestObj.defaultGroups
+            }
+            
+            $selectedGroups | Should -Be @("core", "docs")
+            $selectedGroups.Count | Should -Be 2
+        }
+        
+        It "Should use override groups when specified" {
+            $manifestObj = [PSCustomObject]@{
+                schema        = "2"
+                defaultGroups = @("core", "docs")
+                groups        = [PSCustomObject]@{
+                    core = @(
+                        [PSCustomObject]@{ src = "LICENSE"; dst = "LICENSE" }
+                    )
+                    docs = @(
+                        [PSCustomObject]@{ src = "docs/guide.md"; dst = "docs/guide.md" }
+                    )
+                    ci   = @(
+                        [PSCustomObject]@{ src = ".github/workflows/ci.yml"; dst = ".github/workflows/ci.yml" }
+                    )
+                }
+            }
+            
+            # Simulate override file with group selection
+            $global:overwrites = [PSCustomObject]@{
+                groups = @("core", "ci")
+            }
+            
+            # Determine selected groups (simulating script logic)
+            $selectedGroups = @()
+            if ($global:overwrites -and $global:overwrites.PSObject.Properties.Name -contains 'groups') {
+                $selectedGroups = $global:overwrites.groups
+            }
+            elseif ($manifestObj.PSObject.Properties.Name -contains 'defaultGroups') {
+                $selectedGroups = $manifestObj.defaultGroups
+            }
+            
+            $selectedGroups | Should -Be @("core", "ci")
+            $selectedGroups.Count | Should -Be 2
+        }
+        
+        It "Should use defaultGroups when override file exists but has no groups property" {
+            $manifestObj = [PSCustomObject]@{
+                schema        = "2"
+                defaultGroups = @("core", "docs")
+                groups        = [PSCustomObject]@{
+                    core = @(
+                        [PSCustomObject]@{ src = "LICENSE"; dst = "LICENSE" }
+                    )
+                    docs = @(
+                        [PSCustomObject]@{ src = "docs/guide.md"; dst = "docs/guide.md" }
+                    )
+                    ci   = @(
+                        [PSCustomObject]@{ src = ".github/workflows/ci.yml"; dst = ".github/workflows/ci.yml" }
+                    )
+                }
+            }
+            
+            # Simulate override file with remap/ignore but NO groups property
+            $global:overwrites = [PSCustomObject]@{
+                remap  = [PSCustomObject]@{
+                    "LICENSE" = "CUSTOM-LICENSE"
+                }
+                ignore = @("*.tmp")
+            }
+            
+            # Determine selected groups (simulating script logic)
+            $selectedGroups = @()
+            if ($global:overwrites -and $global:overwrites.PSObject.Properties.Name -contains 'groups') {
+                $selectedGroups = $global:overwrites.groups
+            }
+            elseif ($manifestObj.PSObject.Properties.Name -contains 'defaultGroups') {
+                $selectedGroups = $manifestObj.defaultGroups
+            }
+            
+            # Should fall back to defaultGroups even though override file exists
+            $selectedGroups | Should -Be @("core", "docs")
+            $selectedGroups.Count | Should -Be 2
+        }
+        
+        It "Should process entries from selected groups correctly" {
+            $manifestObj = [PSCustomObject]@{
+                schema        = "2"
+                defaultGroups = @("core")
+                groups        = [PSCustomObject]@{
+                    core = @(
+                        [PSCustomObject]@{ src = "LICENSE"; dst = "LICENSE" }
+                        [PSCustomObject]@{ src = "README.md"; dst = "README.md"; overwrite = "ifMissing" }
+                    )
+                    docs = @(
+                        [PSCustomObject]@{ src = "docs/guide.md"; dst = "docs/guide.md" }
+                    )
+                }
+            }
+            
+            $global:overwrites = $null
+            $selectedGroups = @("core")
+            
+            # Simulate script logic for processing selected groups
+            $entries = @()
+            foreach ($groupName in $selectedGroups) {
+                if ($manifestObj.groups.PSObject.Properties.Name -contains $groupName) {
+                    $groupFiles = $manifestObj.groups.$groupName
+                    foreach ($file in $groupFiles) {
+                        $overwrite = if ($file.PSObject.Properties.Name -contains 'overwrite') { $file.overwrite } else { "always" }
+                        $entries += [pscustomobject]@{ src = $file.src; dst = $file.dst; overwrite = $overwrite }
+                    }
+                }
+            }
+            
+            $entries.Count | Should -Be 2
+            $entries[0].src | Should -Be "LICENSE"
+            $entries[0].dst | Should -Be "LICENSE"
+            $entries[0].overwrite | Should -Be "always"
+            $entries[1].src | Should -Be "README.md"
+            $entries[1].dst | Should -Be "README.md"
+            $entries[1].overwrite | Should -Be "ifMissing"
+        }
+    }
+}

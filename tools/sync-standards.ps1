@@ -4,9 +4,10 @@
 #   - Public GitHub repo via raw.githubusercontent.com (default)
 #   - Local folder via -SourcePath
 #
-# Supports schema v1 (array of ["src", "dst"]) and per-repo overrides:
+# Supports schema v2 (groups with defaultGroups) and per-repo overrides:
 #   - .standards.override.json with:
-#       { "remap": { "srcOrDst": "new/destination", ... },
+#       { "groups": ["group1", "group2"],
+#         "remap": { "srcOrDst": "new/destination", ... },
 #         "ignore": [ "glob/**", ... ] }
 
 param(
@@ -130,7 +131,7 @@ function Is-Ignored([string]$dstFinal) {
 }
 
 # ---------------------------
-# Load manifest (schema v1)
+# Load manifest (schema v2)
 # ---------------------------
 
 # Exit early if in test mode (functions are already loaded)
@@ -143,21 +144,16 @@ Write-Host "Loading manifest '$Manifest' from $sourceLabel ..."
 $manifestText = Get-SourceText $Manifest
 $manifestObj = $manifestText | ConvertFrom-Json -Depth 10
 
-# Assume v1 if schema is absent
-$schema = if ($manifestObj.PSObject.Properties.Name -contains 'schema') { $manifestObj.schema } else { "1" }
-if ($schema -ne "1") { 
-    throw "Unsupported manifest schema '$schema'. This script only supports schema v1." 
+# Require schema v2
+$schema = if ($manifestObj.PSObject.Properties.Name -contains 'schema') { $manifestObj.schema } else { $null }
+if ($schema -ne "2") { 
+    throw "Manifest must use schema v2. Found: '$schema'. Please update your manifest to use schema v2 with groups." 
 }
 
-$entries = @()
-foreach ($file in $manifestObj.files) {
-    $overwrite = if ($file.PSObject.Properties.Name -contains 'overwrite') { $file.overwrite } else { "always" }
-    $entries += [pscustomobject]@{ src = $file.src; dst = $file.dst; overwrite = $overwrite }
-}
-Write-Host "Loaded $($entries.Count) entries from manifest."
+Write-Host "Using manifest schema: v$schema"
 
 # -------------------------------------------------------
-# Load per-repo overrides (remap + ignore)
+# Load per-repo overrides (groups + remap + ignore)
 # -------------------------------------------------------
 
 $overwrites = $null
@@ -168,14 +164,21 @@ if (Test-Path $overridePath) {
         $overwrites = Get-Content $overridePath -Raw | ConvertFrom-Json -Depth 5
     
         # Validate override schema matches manifest schema
-        $overrideSchema = if ($overwrites.PSObject.Properties.Name -contains 'schema') { $overwrites.schema } else { "1" }
-        if ($overrideSchema -ne $schema) {
-            throw "Override file schema '$overrideSchema' does not match manifest schema '$schema'. Both files must use the same schema version."
+        $overrideSchema = if ($overwrites.PSObject.Properties.Name -contains 'schema') { $overwrites.schema } else { "2" }
+        if ($overrideSchema -ne "2") {
+            throw "Override file must use schema v2. Found: '$overrideSchema'. Please update your override file to use schema v2."
         }
 
-        Write-Host "Loaded overrides from '$OverrideFile' (schema: $overrideSchema)."
-        Write-Host "Remap rules: $($overwrites.remap | ConvertTo-Json -Compress)"
-        Write-Host "Ignore files: $($overwrites.ignore -join ', ')"
+        Write-Host "Loaded overrides from '$OverrideFile' (schema: v2)."
+        if ($overwrites.PSObject.Properties.Name -contains 'groups') {
+            Write-Host "Selected groups: $($overwrites.groups -join ', ')"
+        }
+        if ($overwrites.PSObject.Properties.Name -contains 'remap') {
+            Write-Host "Remap rules: $($overwrites.remap | ConvertTo-Json -Compress)"
+        }
+        if ($overwrites.PSObject.Properties.Name -contains 'ignore') {
+            Write-Host "Ignore files: $($overwrites.ignore -join ', ')"
+        }
     }
     catch {
         throw "Failed to parse overrides file '$OverrideFile'. $($_.Exception.Message)"
@@ -184,6 +187,46 @@ if (Test-Path $overridePath) {
 else {
     Write-Host "No override file found at: $overridePath"
 }
+
+# -------------------------------------------------------
+# Process manifest entries (schema v2 only)
+# -------------------------------------------------------
+
+$entries = @()
+
+# Determine which groups to use
+$selectedGroups = @()
+if ($overwrites -and $overwrites.PSObject.Properties.Name -contains 'groups') {
+    # Use groups specified in override file
+    $selectedGroups = $overwrites.groups
+    Write-Host "Using groups from override file: $($selectedGroups -join ', ')"
+}
+elseif ($manifestObj.PSObject.Properties.Name -contains 'defaultGroups') {
+    # Use defaultGroups from manifest
+    $selectedGroups = $manifestObj.defaultGroups
+    Write-Host "Using defaultGroups from manifest: $($selectedGroups -join ', ')"
+}
+else {
+    throw "Schema v2 manifest must have 'defaultGroups' defined, or override file must specify 'groups'."
+}
+
+# Process selected groups
+foreach ($groupName in $selectedGroups) {
+    if ($manifestObj.groups.PSObject.Properties.Name -contains $groupName) {
+        $groupFiles = $manifestObj.groups.$groupName
+        Write-Host "Processing group '$groupName' with $($groupFiles.Count) files..."
+        
+        foreach ($file in $groupFiles) {
+            $overwrite = if ($file.PSObject.Properties.Name -contains 'overwrite') { $file.overwrite } else { "always" }
+            $entries += [pscustomobject]@{ src = $file.src; dst = $file.dst; overwrite = $overwrite }
+        }
+    }
+    else {
+        Write-Warning "Group '$groupName' not found in manifest. Available groups: $($manifestObj.groups.PSObject.Properties.Name -join ', ')"
+    }
+}
+
+Write-Host "Loaded $($entries.Count) entries from manifest."
 
 # -------------------------------------------------------
 # Sync files (always overwrite unless -DryRun)

@@ -33,6 +33,11 @@ on:
         default: "auto"
         required: false
         type: string
+      dry_run:
+        description: "Dry run mode - show what would be done without making changes"
+        default: false
+        required: false
+        type: boolean
 
 jobs:
   sync:
@@ -53,9 +58,11 @@ jobs:
           ./tools/sync-standards.ps1 `
             -Org "${{ inputs.org }}" `
             -Repo "${{ inputs.repo }}" `
-            -Ref "${{ inputs.ref }}"
+            -Ref "${{ inputs.ref }}" `
+            ${{ inputs.dry_run && '-DryRun' || '' }}
 
       - name: Stage changes
+        if: ${{ !inputs.dry_run }}
         shell: bash
         run: |
           git add -A
@@ -65,9 +72,20 @@ jobs:
             echo "CHANGES=true" >> $GITHUB_ENV
           fi
 
+      - name: Show dry run summary
+        if: ${{ inputs.dry_run }}
+        shell: bash
+        run: |
+          echo "DRY RUN MODE - No changes will be committed or pushed"
+          echo ""
+          echo "Files that would be modified:"
+          git status --porcelain || echo "No changes detected"
+          echo ""
+          echo "To apply these changes, run the workflow again without dry_run option."
+
       # https://github.com/actions/checkout?tab=readme-ov-file#push-a-commit-using-the-built-in-token 
       - name: Commit (if any)
-        if: env.CHANGES == 'true'
+        if: env.CHANGES == 'true' && !inputs.dry_run
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -75,7 +93,7 @@ jobs:
 
       # Direct push if there are changes and mode is auto
       - name: Try direct push
-        if: env.CHANGES == 'true' && inputs.mode == 'auto' && github.event.repository.fork != true
+        if: env.CHANGES == 'true' && inputs.mode == 'auto' && github.event.repository.fork != true && !inputs.dry_run
         id: direct
         continue-on-error: true
         run: |
@@ -85,7 +103,7 @@ jobs:
       # If push fails (e.g. protected branch) or if forced mode=pr → open PR
       - name: Create Pull Request
         if: >
-          env.CHANGES == 'true' && (
+          env.CHANGES == 'true' && !inputs.dry_run && (
             inputs.mode == 'pr' ||
             github.event.repository.fork == true ||
             steps.direct.outcome == 'failure' ||

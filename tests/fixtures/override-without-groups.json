@@ -1,0 +1,10 @@
+{
+    "schema": "2",
+    "remap": {
+        "LICENSE": "CUSTOM-LICENSE"
+    },
+    "ignore": [
+        "*.tmp",
+        "temp/*"
+    ]
+}

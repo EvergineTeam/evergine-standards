@@ -103,6 +103,7 @@ The reusable workflow accepts the following parameters in the `with` section:
 | `target_branch` | Branch to apply changes to | `main` | No |
 | `commit_message` | Custom commit message for changes | Uses `STANDARDS_COMMIT_MESSAGE` variable or default fallback | No |
 | `mode` | Commit strategy: `auto` (push then PR if needed) or `pr` (always PR) | `auto` | No |
+| `dry_run` | Show what would be done without making changes | `false` | No |
 
 > **Note:** For `commit_message`, the workflow uses a priority fallback system:
 > 1. Explicit `commit_message` parameter (if provided)
@@ -144,20 +145,37 @@ The script:
 
 ## Manifest format (`sync-manifest.json`)
 
-The manifest defines which files are distributed to all repositories:
+The manifest defines which files are distributed to all repositories using schema v2 with groups:
 
 ```json
 {
-  "schema": "1",
-  "files": [
-    { "src": "LICENSE", "dst": "LICENSE" },
-    { "src": "assets/nuget-icon.png", "dst": "assets/nuget-icon.png" },
-    { "src": "tools/sync-standards.ps1", "dst": "tools/sync-standards.ps1" },
-    { "src": "workflows/sync-wrapper.yml", "dst": ".github/workflows/sync-standards.yml", "overwrite": "ifMissing" }
-  ]
+  "schema": "2",
+  "defaultGroups": ["core"],
+  "groups": {
+    "core": [
+      { "src": "LICENSE", "dst": "LICENSE" },
+      { "src": "assets/nuget-icon.png", "dst": "assets/nuget-icon.png" },
+      { "src": "tools/sync-standards.ps1", "dst": "tools/sync-standards.ps1" },
+      { "src": ".github/workflows/sync-standards.yml", "dst": ".github/workflows/sync-standards.yml", "overwrite": "ifMissing" }
+    ],
+    "docs": [
+      { "src": "templates/README.md", "dst": "README.md", "overwrite": "ifMissing" },
+      { "src": "docs/contributing.md", "dst": "CONTRIBUTING.md" }
+    ],
+    "ci": [
+      { "src": ".github/workflows/build.yml", "dst": ".github/workflows/build.yml", "overwrite": "ifMissing" }
+    ]
+  }
 }
 ```
 
+**Properties:**
+- `schema`: Must be "2"
+- `defaultGroups`: Array of group names to use when no override file specifies groups
+- `groups`: Object containing named groups, each with an array of files
+- Groups allow different repositories to receive different sets of files based on their role/type
+
+**File Properties:**
 - `src`: Path in this repository.  
 - `dst`: Destination path in the target repository.  
 - `overwrite`:  
@@ -172,7 +190,8 @@ Each repository can define exceptions and remappings:
 
 ```json
 {
-  "schema": "1",
+  "schema": "2",
+  "groups": ["core", "docs"],
   "remap": {
     ".github/workflows/sync-standards.yml": {
       "dst": ".github/workflows/sync-standards-custom.yml",
@@ -181,16 +200,139 @@ Each repository can define exceptions and remappings:
     "assets/nuget-icon.png": "src/Branding/nuget-icon.png"
   },
   "ignore": [
-    "LICENSE"
+    "templates/*"
   ]
 }
 ```
 
-- **`remap`**  
-  - Key = `src` or `dst` (from manifest).  
-  - Value = new destination (string) or object `{ dst, overwrite }`.
-- **`ignore`**  
-  - Exact list of paths to skip (no wildcards).
+**Override Properties:**
+- **`schema`**: Must be "2" 
+- **`groups`**: Array of group names to sync instead of `defaultGroups` from manifest
+- **`remap`**: Change file destinations or overwrite policies
+  - Key = `src` or `dst` (from manifest)
+  - Value = new destination (string) or object `{ dst, overwrite }`
+- **`ignore`**: Array of file paths to skip with full wildcard pattern support
+  - **Wildcards supported:**
+    - `*` - Matches any number of characters
+    - `?` - Matches exactly one character
+    - `[abc]` - Matches any character in the set
+    - `[a-z]` - Matches any character in the range
+  - **Examples:**
+    - `"*.tmp"` - All .tmp files
+    - `"temp/*"` - Everything inside temp folder
+    - `"*debug*.log"` - Files containing "debug" with .log extension
+    - `"test-?.json"` - Files like test-1.json, test-a.json, etc.
+    - `"docs/draft[0-9][0-9].md"` - Files like docs/draft01.md, docs/draft99.md
+
+### Group selection examples
+
+```json
+{
+  "schema": "2",
+  "groups": ["core"]
+}
+```
+Only synchronizes files from the "core" group.
+
+```json
+{
+  "schema": "2", 
+  "groups": ["core", "ci", "docs"]
+}
+```
+Synchronizes files from multiple groups.
+
+### Group selection behavior
+
+The script follows this priority order for determining which groups to sync:
+
+1. **Override file with `groups`**: If an override file exists and contains a `groups` property, those groups are used
+2. **Manifest `defaultGroups`**: If no override file exists OR the override file doesn't specify `groups`, the manifest's `defaultGroups` are used
+3. **Error**: If neither exists, the script throws an error
+
+**Examples:**
+
+```json
+// Override with groups - uses specified groups
+{
+  "schema": "2",
+  "groups": ["core", "docs"]
+}
+```
+
+```json
+// Override without groups - falls back to defaultGroups
+{
+  "schema": "2",
+  "remap": { "LICENSE": "CUSTOM-LICENSE" },
+  "ignore": ["*.tmp"]
+}
+```
+
+```json
+// No override file - uses defaultGroups from manifest
+// (no .standards.override.json file)
+```
+
+This allows repositories to use override files for `remap` and `ignore` functionality without needing to explicitly specify `groups` if the default groups are appropriate.
+
+### Advanced ignore patterns
+
+The `ignore` array supports powerful wildcard patterns for flexible file exclusion:
+
+```json
+{
+  "schema": "2",
+  "groups": ["core", "docs"],
+  "ignore": [
+    "*.tmp",                    // All temporary files
+    "*.bak",                    // All backup files
+    "temp/*",                   // Everything in temp folder
+    "draft/*",                  // Everything in draft folder
+    "*debug*",                  // Any file containing "debug"
+    "test-*.json",              // Files like test-manifest.json, test-config.json
+    "draft?.md",                // Files like draft1.md, drafta.md (single char)
+    "v[0-9].*",                 // Version files like v1.json, v2.txt
+    "assets/temp/**",           // All temporary assets
+    "tools/backup/**",          // All backup tools
+    "**/temp/**",               // All temp folders anywhere in the tree
+    "**/*.draft",               // All .draft files anywhere
+    "*.old",                    // Old versions of files
+    "backup-*",                 // Files starting with "backup-"
+    "experimental/*"            // Everything in experimental folder
+  ]
+}
+```
+
+**Pattern matching rules:**
+- Patterns are case-insensitive on Windows, case-sensitive on Linux/macOS
+- Use forward slashes `/` for path separators (works on all platforms)
+- `**` matches any number of directories (recursive)
+- Patterns match against the destination path (`dst`) from the manifest
+
+---
+
+## Groups feature
+
+The groups feature allows different types of repositories to receive different sets of files, making the synchronization system more flexible and reducing unnecessary files in specific repository types.
+
+### Use cases
+
+**Core libraries** (group: `["core", "ci"]`):
+- License, NuGet icon, sync tools
+- CI workflows for building and testing
+
+**Documentation repositories** (group: `["core", "docs"]`):
+- License, basic tools
+- Documentation templates and guidelines
+
+**Tool repositories** (group: `["core", "build"]`):
+- License, sync tools
+- Build scripts and configuration
+
+**Sample projects** (group: `["core"]`):
+- License and minimal sync capability
+- No CI/CD or build infrastructure
 
 ---
 
@@ -199,10 +341,24 @@ Each repository can define exceptions and remappings:
 You can test the sync locally without CI:
 
 ```bash
+# Test with remote source (default)
+pwsh ./tools/sync-standards.ps1 -DryRun
+
+# Test with local source
 pwsh ./tools/sync-standards.ps1 -SourcePath "../evergine-standards" -DryRun
+
+# Test with specific groups by creating a temporary override file
+echo '{"schema":"2","groups":["core","docs"]}' > .standards.override.json
+pwsh ./tools/sync-standards.ps1 -SourcePath "../evergine-standards" -DryRun
+rm .standards.override.json
+
+# Test with ignore patterns
+echo '{"schema":"2","ignore":["*.tmp","temp/*","*debug*"]}' > .standards.override.json
+pwsh ./tools/sync-standards.ps1 -SourcePath "../evergine-standards" -DryRun
+rm .standards.override.json
 ```
 
-This simulates the synchronization using your local checkout instead of downloading from GitHub.
+This simulates the synchronization and shows which files would be processed without making actual changes.
 
 ---
 
@@ -210,11 +366,17 @@ This simulates the synchronization using your local checkout instead of download
 
 | Component | Role |
 |------------|------|
-| `sync-manifest.json` | Defines which files are synchronized |
-| `tools/sync-standards.ps1` | Performs synchronization (PowerShell) |
+| `sync-manifest.json` | Defines which files are synchronized using schema v2 with groups |
+| `tools/sync-standards.ps1` | Performs synchronization (PowerShell) with schema v2 support |
 | `_sync-standards-reusable.yml` | Core reusable workflow |
 | `sync-wrapper.yml` | Template workflow copied to each repo |
-| `.standards.override.json` | Per-repo customization |
+| `.standards.override.json` | Per-repo customization (groups, remap, ignore) |
+
+**Groups benefits:**
+- **Flexible targeting**: Different repository types get appropriate file sets
+- **Reduced clutter**: Repositories only receive relevant files
+- **Scalable maintenance**: New file types can be added to specific groups
+- **Clean separation**: Logical organization of files by purpose (core vs docs vs ci vs build)
 
 ---
 

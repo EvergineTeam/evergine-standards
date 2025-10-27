@@ -1,0 +1,12 @@
+{
+    "schema": "2",
+    "groups": [
+        "core"
+    ],
+    "remap": {
+        "config.json": "app.config.json"
+    },
+    "ignore": [
+        "docs/**"
+    ]
+}

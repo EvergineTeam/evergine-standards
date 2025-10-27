@@ -243,5 +243,5 @@ The current testing architecture provides:
 1. **No Code Duplication**: Tests use real script functions via `-TestMode`
 2. **Automatic Synchronization**: Changes in the main script automatically reflect in tests
 3. **Modular CI/CD**: Reusable workflow templates for different scenarios
-4. **Comprehensive Coverage**: 17 tests covering unit and integration scenarios
+4. **Comprehensive Coverage**: tests covering unit and integration scenarios
 5. **Easy Maintenance**: Single source of truth for function logic

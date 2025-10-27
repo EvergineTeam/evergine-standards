@@ -1,17 +1,32 @@
 {
-    "schema": "1",
-    "files": [
-        {
-            "src": "LICENSE",
-            "dst": "LICENSE"
-        },
-        {
-            "src": "README.md",
-            "dst": "README.md"
-        },
-        {
-            "src": "assets/icon.png",
-            "dst": "assets/icon.png"
-        }
-    ]
+    "schema": "2",
+    "defaultGroups": [
+        "core"
+    ],
+    "groups": {
+        "core": [
+            {
+                "src": "LICENSE",
+                "dst": "LICENSE"
+            },
+            {
+                "src": "README.md",
+                "dst": "README.md"
+            },
+            {
+                "src": "assets/icon.png",
+                "dst": "assets/icon.png"
+            }
+        ],
+        "docs": [
+            {
+                "src": "docs/guide.md",
+                "dst": "docs/guide.md"
+            },
+            {
+                "src": "docs/api.md",
+                "dst": "docs/api.md"
+            }
+        ]
+    }
 }
