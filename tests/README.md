@@ -80,7 +80,7 @@ The script includes a `-TestMode` parameter that allows loading functions withou
 
 ```powershell
 # Load functions for testing without execution
-. .\tools\sync-standards.ps1 -TestMode
+. .\scripts\sync-standards.ps1 -TestMode
 
 # Test functions directly with explicit parameters  
 $url = Get-RawUrl -path "test.txt" -Org "TestOrg" -Repo "TestRepo" -Ref "main"
@@ -221,7 +221,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ### TestMode not working
 - Ensure the script has the `-TestMode` parameter
 - Verify functions are defined outside the `if (-not $TestMode)` block
-- Check dot sourcing syntax: `. .\tools\sync-standards.ps1 -TestMode`
+- Check dot sourcing syntax: `. .\scripts\sync-standards.ps1 -TestMode`
 
 ### Mock repo not found
 - Verify that `tests/fixtures/mock-repo/` exists

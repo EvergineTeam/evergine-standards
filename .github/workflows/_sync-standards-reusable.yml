@@ -23,6 +23,11 @@ on:
         default: "main"
         required: false
         type: string
+      script_path:
+        description: "Path where to download the sync script"
+        default: "sync-standards.ps1"
+        required: false
+        type: string
       commit_message:
         description: "Commit message to use"
         required: false
@@ -51,11 +56,29 @@ jobs:
         uses: actions/checkout@v5
         with:
           ref: ${{ inputs.target_branch }}
+          fetch-depth: 0
 
-      - name: Run standards sync
+      - name: Check for local script
+        id: check_local
+        run: |
+          if [ -f "${{ inputs.script_path }}" ]; then
+            echo "use_local=true" >> $GITHUB_OUTPUT
+            echo "Using local script at ${{ inputs.script_path }}"
+          else
+            echo "use_local=false" >> $GITHUB_OUTPUT
+            echo "Will download script to ${{ inputs.script_path }}"
+          fi
+
+      - name: Download sync script
+        if: steps.check_local.outputs.use_local == 'false'
+        run: |
+          curl -o "${{ inputs.script_path }}" \
+               "https://raw.githubusercontent.com/${{ inputs.org }}/${{ inputs.repo }}/${{ inputs.ref }}/scripts/sync-standards.ps1"
+
+      - name: Run sync script
         shell: pwsh
         run: |
-          ./tools/sync-standards.ps1 `
+          ${{ inputs.script_path }} `
             -Org "${{ inputs.org }}" `
             -Repo "${{ inputs.repo }}" `
             -Ref "${{ inputs.ref }}" `

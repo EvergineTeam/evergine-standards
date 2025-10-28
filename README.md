@@ -22,14 +22,15 @@ Typical consumers include:
 
 ```
 /
-├─ LICENSE                       # Canonical license file
+├─ .github/workflows/
+│  ├─ _sync-standards-reusable.yml # Reusable GitHub Actions workflow
+│  └─ sync-standards.yml         # Template workflow for consumer repos
 ├─ assets/
 │  └─ nuget-icon.png             # Official NuGet package icon (512x512)
-├─ tools/
+├─ scripts/
+│  ├─ download-sync-script.ps1   # Helper to download sync script locally
 │  └─ sync-standards.ps1         # Synchronization script (PowerShell 7+)
-├─ workflows/
-│  ├─ sync-wrapper.yml           # Template workflow for consumer repos
-│  └─ _sync-standards-reusable.yml # Reusable GitHub Actions workflow
+├─ LICENSE                       # Canonical license file
 └─ sync-manifest.json            # Manifest defining which files to sync
 ```
 
@@ -48,8 +49,8 @@ The reusable workflow is defined here:
 ```
 
 It handles the synchronization logic:
+- **Downloads the sync script dynamically** from this repository (`scripts/sync-standards.ps1`).
 - Downloads and applies the manifest (`sync-manifest.json`).
-- Uses the PowerShell script `tools/sync-standards.ps1`.
 - Detects changes.
 - Commits or opens a Pull Request (depending on protection rules).
 
@@ -83,6 +84,7 @@ jobs:
       repo: "evergine-standards"
       ref:  "main"
       target_branch: "main"
+      script_path: "sync-standards.ps1"
       commit_message: "auto: sync standard files [skip ci]"
       mode: "auto"
     secrets: inherit
@@ -101,6 +103,7 @@ The reusable workflow accepts the following parameters in the `with` section:
 | `repo` | Source repository name | `evergine-standards` | No |
 | `ref` | Git reference (branch, tag, or SHA) | `main` | No |
 | `target_branch` | Branch to apply changes to | `main` | No |
+| `script_path` | Path where to download the sync script | `sync-standards.ps1` | No |
 | `commit_message` | Custom commit message for changes | Uses `STANDARDS_COMMIT_MESSAGE` variable or default fallback | No |
 | `mode` | Commit strategy: `auto` (push then PR if needed) or `pr` (always PR) | `auto` | No |
 | `dry_run` | Show what would be done without making changes | `false` | No |
@@ -114,13 +117,42 @@ The reusable workflow accepts the following parameters in the `with` section:
 
 ---
 
-## Synchronization script (`tools/sync-standards.ps1`)
+## Synchronization script (`scripts/sync-standards.ps1`)
 
 The PowerShell script performs the actual synchronization.
 
+### Local override option
+
+Consumer repositories can use a local version of the script for special cases:
+
+#### Using the download helper
+The easiest way to get a local copy is using the download helper:
+
+```bash
+# Download latest version to current directory
+.\scripts\download-sync-script.ps1
+
+# Download to specific location
+.\scripts\download-sync-script.ps1 -Destination "tools\sync-standards.ps1"
+
+# Download specific version
+.\scripts\download-sync-script.ps1 -Ref "v1.2.0"
+```
+
+#### Manual setup
+Alternatively, you can manually place a local copy:
+- Place the script at the path specified in `script_path` parameter (default: `sync-standards.ps1`)
+- Update your workflow's `script_path` parameter to point to your local copy
+
+#### Important considerations
+- **Automatic detection**: The workflow will automatically detect and use the local version instead of downloading
+- **No automatic updates**: Once you use a local version, you **will not receive newer versions** automatically
+- **Manual maintenance**: You're responsible for updating the local script when needed
+- **Override workflow parameter**: Remember to set `script_path` in your wrapper workflow to match your local file location
+
 ### Usage
 ```bash
-pwsh ./tools/sync-standards.ps1 [-Org EvergineTeam] [-Repo evergine-standards] [-Ref main]
+pwsh ./scripts/sync-standards.ps1 [-Org EvergineTeam] [-Repo evergine-standards] [-Ref main]
 ```
 
 Optional parameters:
@@ -140,6 +172,38 @@ The script:
 
 > The script never commits or pushes.  
 > Commits are performed by the GitHub Actions workflow.
+
+---
+
+## Download helper (`scripts/download-sync-script.ps1`)
+
+A convenience script to download the sync script to your local repository for development or testing.
+
+### Usage
+```bash
+pwsh ./scripts/download-sync-script.ps1 [-Org EvergineTeam] [-Repo evergine-standards] [-Ref main] [-Destination path] [-Force]
+```
+
+### Parameters
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `-Org` | Source GitHub organization | `EvergineTeam` |
+| `-Repo` | Source repository name | `evergine-standards` |
+| `-Ref` | Branch, tag, or commit to download from | `main` |
+| `-Destination` | Local path where to save the script | `sync-standards.ps1` |
+| `-Force` | Overwrite existing file without prompting | `false` |
+
+### Examples
+```bash
+# Download latest to current directory
+.\scripts\download-sync-script.ps1
+
+# Download to tools directory  
+.\scripts\download-sync-script.ps1 -Destination "tools\sync-standards.ps1"
+
+# Download specific version
+.\scripts\download-sync-script.ps1 -Ref "v1.2.0" -Force
+```
 
 ---
 
@@ -342,19 +406,19 @@ You can test the sync locally without CI:
 
 ```bash
 # Test with remote source (default)
-pwsh ./tools/sync-standards.ps1 -DryRun
+pwsh ./scripts/sync-standards.ps1 -DryRun
 
 # Test with local source
-pwsh ./tools/sync-standards.ps1 -SourcePath "../evergine-standards" -DryRun
+pwsh ./scripts/sync-standards.ps1 -SourcePath "../evergine-standards" -DryRun
 
 # Test with specific groups by creating a temporary override file
 echo '{"schema":"2","groups":["core","docs"]}' > .standards.override.json
-pwsh ./tools/sync-standards.ps1 -SourcePath "../evergine-standards" -DryRun
+pwsh ./scripts/sync-standards.ps1 -SourcePath "../evergine-standards" -DryRun
 rm .standards.override.json
 
 # Test with ignore patterns
 echo '{"schema":"2","ignore":["*.tmp","temp/*","*debug*"]}' > .standards.override.json
-pwsh ./tools/sync-standards.ps1 -SourcePath "../evergine-standards" -DryRun
+pwsh ./scripts/sync-standards.ps1 -SourcePath "../evergine-standards" -DryRun
 rm .standards.override.json
 ```
 
@@ -367,9 +431,9 @@ This simulates the synchronization and shows which files would be processed with
 | Component | Role |
 |------------|------|
 | `sync-manifest.json` | Defines which files are synchronized using schema v2 with groups |
-| `tools/sync-standards.ps1` | Performs synchronization (PowerShell) with schema v2 support |
-| `_sync-standards-reusable.yml` | Core reusable workflow |
-| `sync-wrapper.yml` | Template workflow copied to each repo |
+| `scripts/sync-standards.ps1` | Performs synchronization (PowerShell) with schema v2 support |
+| `_sync-standards-reusable.yml` | Core reusable workflow with dynamic script download |
+| `sync-standards.yml` | Template workflow copied to each repo |
 | `.standards.override.json` | Per-repo customization (groups, remap, ignore) |
 
 **Groups benefits:**

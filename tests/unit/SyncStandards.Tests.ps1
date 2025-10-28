@@ -3,10 +3,10 @@
 
 BeforeAll {
     # Load the actual script using dot sourcing with TestMode to avoid execution
-    $ScriptPath = Join-Path $PSScriptRoot "..\..\tools\sync-standards.ps1"
+    $script:SyncScriptPath = Join-Path $PSScriptRoot "..\..\scripts\sync-standards.ps1"
     
     # Dot source the script with TestMode parameter
-    . $ScriptPath -TestMode
+    . $script:SyncScriptPath -TestMode
     
     # Override the script parameters with test values
     $global:Org = "TestOrg"

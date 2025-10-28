@@ -19,6 +19,10 @@ on:
         description: "Target branch to apply changes"
         default: "main"
         required: false
+      script_path:
+        description: "Path where to download the sync script"
+        default: "sync-standards.ps1"
+        required: false
       commit_message:
         description: "Commit message"
         required: false
@@ -46,6 +50,7 @@ jobs:
       repo: ${{ github.event.inputs.repo || 'evergine-standards' }}
       ref:  ${{ github.event.inputs.ref  || 'main' }}
       target_branch: ${{ github.event.inputs.target_branch || 'main' }}
+      script_path: ${{ github.event.inputs.script_path || 'sync-standards.ps1' }}
       commit_message: "${{ github.event.inputs.commit_message || vars.STANDARDS_COMMIT_MESSAGE || 'auto: sync standard files [skip ci]' }}"
       mode: ${{ github.event.inputs.mode || 'auto' }}
       dry_run: ${{ github.event.inputs.dry_run == 'true' }}

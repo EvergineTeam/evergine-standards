@@ -1,10 +1,14 @@
 # tests/integration/SyncStandards.Simple.Integration.Tests.ps1
 # Simple integration tests for sync-standards.ps1 script compatible with Pester v3
 
+BeforeAll {
+    # Common path to the sync script
+    $script:SyncScriptPath = Join-Path $PSScriptRoot "..\..\scripts\sync-standards.ps1"
+}
+
 Describe "Sync Standards Simple Integration Tests" {
     
     It "Should execute sync script with dry-run successfully" {
-        $ScriptPath = Join-Path $PSScriptRoot "..\..\tools\sync-standards.ps1"
         $MockRepoPath = Join-Path $PSScriptRoot "..\fixtures\mock-repo"
         $TestWorkspace = Join-Path ([System.IO.Path]::GetTempPath()) "sync-test-$(Get-Random)"
         
@@ -13,7 +17,7 @@ Describe "Sync Standards Simple Integration Tests" {
             
             # Run with dry-run to avoid making changes
             $ErrorBefore = $Error.Count
-            & $ScriptPath -SourcePath $MockRepoPath -Root $TestWorkspace -Manifest "sync-manifest.json" -DryRun
+            & $script:SyncScriptPath -SourcePath $MockRepoPath -Root $TestWorkspace -Manifest "sync-manifest.json" -DryRun
             $ErrorAfter = $Error.Count
             
             # Should not generate new errors (indicating successful execution)
@@ -68,7 +72,6 @@ Describe "Sync Standards Simple Integration Tests" {
 Describe "Schema v2 Groups Integration Tests" {
     
     It "Should execute script with schema v2 manifest successfully" {
-        $ScriptPath = Join-Path $PSScriptRoot "..\..\tools\sync-standards.ps1"
         $MockRepoPath = Join-Path $PSScriptRoot "..\fixtures\mock-repo"
         $TestWorkspace = Join-Path ([System.IO.Path]::GetTempPath()) "sync-v2-test-$(Get-Random)"
         $ManifestPath = Join-Path $PSScriptRoot "..\fixtures\manifest-basic.json"
@@ -83,7 +86,7 @@ Describe "Schema v2 Groups Integration Tests" {
             
             # Run with dry-run to test schema v2 processing
             $ErrorBefore = $Error.Count
-            & $ScriptPath -SourcePath $MockRepoPath -Root $TestWorkspace -Manifest "sync-manifest.json" -DryRun
+            & $script:SyncScriptPath -SourcePath $MockRepoPath -Root $TestWorkspace -Manifest "sync-manifest.json" -DryRun
             $ErrorAfter = $Error.Count
             
             # Should not generate new errors
@@ -102,7 +105,6 @@ Describe "Schema v2 Groups Integration Tests" {
     }
     
     It "Should execute script with schema v2 override file successfully" {
-        $ScriptPath = Join-Path $PSScriptRoot "..\..\tools\sync-standards.ps1"
         $MockRepoPath = Join-Path $PSScriptRoot "..\fixtures\mock-repo"
         $TestWorkspace = Join-Path ([System.IO.Path]::GetTempPath()) "sync-v2-override-test-$(Get-Random)"
         $ManifestPath = Join-Path $PSScriptRoot "..\fixtures\manifest-with-overwrite.json"
@@ -122,7 +124,7 @@ Describe "Schema v2 Groups Integration Tests" {
             
             # Run with dry-run to test schema v2 with group selection
             $ErrorBefore = $Error.Count
-            & $ScriptPath -SourcePath $MockRepoPath -Root $TestWorkspace -Manifest "sync-manifest.json" -DryRun
+            & $script:SyncScriptPath -SourcePath $MockRepoPath -Root $TestWorkspace -Manifest "sync-manifest.json" -DryRun
             $ErrorAfter = $Error.Count
             
             # Should not generate new errors
@@ -156,7 +158,6 @@ Describe "Schema v2 Groups Integration Tests" {
     }
     
     It "Should use defaultGroups when override file exists without groups property" {
-        $ScriptPath = Join-Path $PSScriptRoot "..\..\tools\sync-standards.ps1"
         $MockRepoPath = Join-Path $PSScriptRoot "..\fixtures\mock-repo"
         $TestWorkspace = Join-Path ([System.IO.Path]::GetTempPath()) "sync-no-groups-test-$(Get-Random)"
         $ManifestPath = Join-Path $PSScriptRoot "..\fixtures\manifest-basic.json"
@@ -176,7 +177,7 @@ Describe "Schema v2 Groups Integration Tests" {
             
             # Run with dry-run to test defaultGroups fallback
             $ErrorBefore = $Error.Count
-            & $ScriptPath -SourcePath $MockRepoPath -Root $TestWorkspace -Manifest "sync-manifest.json" -DryRun
+            & $script:SyncScriptPath -SourcePath $MockRepoPath -Root $TestWorkspace -Manifest "sync-manifest.json" -DryRun
             $ErrorAfter = $Error.Count
             
             # Should not generate new errors

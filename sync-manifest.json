@@ -14,10 +14,6 @@
                 "dst": "assets/nuget-icon.png"
             },
             {
-                "src": "tools/sync-standards.ps1",
-                "dst": "tools/sync-standards.ps1"
-            },
-            {
                 "src": ".github/workflows/sync-standards.yml",
                 "dst": ".github/workflows/sync-standards.yml",
                 "overwrite": "ifMissing"
