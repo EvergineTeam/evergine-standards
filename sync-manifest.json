@@ -24,6 +24,11 @@
                 "src": "scripts/binding/Generate-Bindings-DotNet.ps1",
                 "dst": "scripts/Generate-Bindings-DotNet.ps1",
                 "overwrite": "always"
+            },
+            {
+                "src": "scripts/common/Helpers.ps1",
+                "dst": "scripts/Helpers.ps1",
+                "overwrite": "always"
             }
         ]
     }
