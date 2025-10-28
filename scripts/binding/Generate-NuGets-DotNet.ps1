@@ -19,6 +19,8 @@
 	Build configuration (Release, Debug, etc.)
 .PARAMETER IncludeSymbols
 	Whether to include debug symbols in packages
+.PARAMETER SymbolsFormat
+	Symbol package format: 'snupkg' (modern, default) or 'symbols.nupkg' (legacy)
 .PARAMETER HelpersPath
 	Path to the Helpers.ps1 file. Defaults to Helpers.ps1 in the same directory as this script.
 .EXAMPLE
@@ -30,6 +32,9 @@
 .EXAMPLE
 	# Using custom helpers path
 	.\Generate-NuGets-DotNet.ps1 -Revision 123 -Projects "test.csproj" -HelpersPath "C:\Scripts\MyHelpers.ps1"
+.EXAMPLE
+	# Using legacy symbol format
+	.\Generate-NuGets-DotNet.ps1 -Version "1.0.0" -Projects "test.csproj" -SymbolsFormat "symbols.nupkg"
 .LINK
 	https://evergine.com/
 #>
@@ -41,8 +46,10 @@ param (
     [string]$OutputFolderBase = "nupkgs",
     [string]$BuildVerbosity = "normal",
     [string]$BuildConfiguration = "Release",
-    [bool]$IncludeSymbols = $true,
-    [string]$HelpersPath = "$PSScriptRoot\Helpers.ps1"
+    [bool]$IncludeSymbols = $false,
+    [ValidateSet("snupkg", "symbols.nupkg")]
+    [string]$SymbolsFormat = "snupkg",
+    [string]$HelpersPath = "$PSScriptRoot\..\common\Helpers.ps1"
 )
 
 # Import shared helper functions
@@ -90,6 +97,7 @@ $parameters = @{
     "BuildVerbosity"     = $BuildVerbosity
     "OutputFolderBase"   = $OutputFolderBase
     "IncludeSymbols"     = $IncludeSymbols
+    "SymbolsFormat"      = $SymbolsFormat
 }
 
 ShowVariables $parameters
@@ -108,7 +116,30 @@ foreach ($projectPath in $Projects) {
     }
 	
     LogDebug "Packing $projectPath with dotnet"
-    & dotnet pack "$projectPath" --verbosity $BuildVerbosity --configuration $BuildConfiguration --output "$absoluteOutputFolder" -p:IncludeSymbols=$IncludeSymbols -p:PackageVersion=$Version
+    
+    # Build dotnet pack command with appropriate symbol format
+    $packArgs = @(
+        "pack", $projectPath,
+        "--verbosity", $BuildVerbosity,
+        "--configuration", $BuildConfiguration,
+        "--output", $absoluteOutputFolder,
+        "-p:PackageVersion=$Version"
+    )
+    
+    if ($IncludeSymbols) {
+        if ($SymbolsFormat -eq "snupkg") {
+            $packArgs += "-p:IncludeSymbols=true"
+            $packArgs += "-p:SymbolPackageFormat=snupkg"
+        }
+        else {
+            $packArgs += "-p:IncludeSymbols=true"
+        }
+    }
+    else {
+        $packArgs += "-p:IncludeSymbols=false"
+    }
+    
+    & dotnet @packArgs
 	
     if ($LASTEXITCODE -ne 0) {
         throw "dotnet pack failed for $projectPath"
