@@ -3,7 +3,7 @@
 
 BeforeAll {
     # Setup
-    $scriptPath = "$PSScriptRoot\..\..\scripts\binding\Generate-NuGets-DotNet.ps1"
+    $scriptPath = "$PSScriptRoot\..\..\scripts\common\Generate-NuGets-DotNet.ps1"
     $tempDir = Join-Path $env:TEMP "NuGetSymbolsTests_$(Get-Date -Format 'yyyyMMdd_HHmmss')_$([Guid]::NewGuid().ToString('N').Substring(0,8))"
     $helpersPath = "$PSScriptRoot\..\..\scripts\common\Helpers.ps1"
     

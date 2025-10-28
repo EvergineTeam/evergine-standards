@@ -2,7 +2,7 @@
 
 Describe "Generate-NuGets-DotNet Simple Test" {
     BeforeAll {
-        $scriptPath = "$PSScriptRoot\..\..\scripts\binding\Generate-NuGets-DotNet.ps1"
+        $scriptPath = "$PSScriptRoot\..\..\scripts\common\Generate-NuGets-DotNet.ps1"
         $helpersPath = "$PSScriptRoot\..\..\scripts\common\Helpers.ps1"
         $fixturesPath = "$PSScriptRoot\..\fixtures"
         

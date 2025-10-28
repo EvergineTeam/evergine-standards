@@ -26,7 +26,7 @@
                 "overwrite": "always"
             },
             {
-                "src": "scripts/binding/Generate-NuGets-DotNet.ps1",
+                "src": "scripts/common/Generate-NuGets-DotNet.ps1",
                 "dst": "scripts/Generate-NuGets-DotNet.ps1",
                 "overwrite": "always"
             },

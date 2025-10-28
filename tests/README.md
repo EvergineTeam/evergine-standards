@@ -44,7 +44,7 @@ Synchronizes files across Evergine repositories based on manifest configuration.
 ### 2. **Binding Generation** (`scripts/binding/Generate-Bindings-DotNet.ps1`)
 Parameterized template for generating .NET bindings across different repositories.
 
-### 3. **NuGet Packaging** (`scripts/binding/Generate-NuGets-DotNet.ps1`)
+### 3. **NuGet Packaging** (`scripts/common/Generate-NuGets-DotNet.ps1`)
 Unified script for generating NuGet packages supporting both:
 - **Binding style**: Date-based versions with revision numbers
 - **Add-on style**: Direct version specification

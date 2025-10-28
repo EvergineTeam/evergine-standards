@@ -2,7 +2,7 @@
 
 BeforeAll {
     # Import the script to test
-    $scriptPath = "$PSScriptRoot\..\..\scripts\binding\Generate-NuGets-DotNet.ps1"
+    $scriptPath = "$PSScriptRoot\..\..\scripts\common\Generate-NuGets-DotNet.ps1"
     $helpersPath = Resolve-Path "$PSScriptRoot\..\..\scripts\common\Helpers.ps1"
     $fixturesPath = Resolve-Path "$PSScriptRoot\..\fixtures"
 	
@@ -83,17 +83,9 @@ Describe "Generate-NuGets-DotNet Script Tests" {
 	
     Context "Helpers Integration" {
         It "Should load helpers from default path" {
-            # Create a temporary helpers file in the same directory as the script
-            $tempHelpersPath = "$PSScriptRoot\..\..\scripts\binding\Helpers.ps1"
-            Copy-Item $helpersPath $tempHelpersPath -Force
-			
-            try {
-                # Test that the script finds helpers at the default path and fails on missing project
-                { & $scriptPath -Version "1.0.0" -Projects "test.csproj" } | Should -Throw "*Project file not found*"
-            }
-            finally {
-                Remove-Item $tempHelpersPath -Force -ErrorAction SilentlyContinue
-            }
+            # The script is now in common and helpers is already there too
+            # Test that the script finds helpers at the default path and fails on missing project
+            { & $scriptPath -Version "1.0.0" -Projects "test.csproj" } | Should -Throw "*Project file not found*"
         }
 		
         It "Should load helpers from custom path" {

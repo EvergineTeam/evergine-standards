@@ -271,7 +271,9 @@ The manifest defines which files are distributed to all repositories using schem
       { "src": ".github/workflows/sync-standards.yml", "dst": ".github/workflows/sync-standards.yml", "overwrite": "ifMissing" }
     ],
     "binding": [
-      { "src": "scripts/binding/Generate-Bindings-DotNet.ps1", "dst": "scripts/Generate-Bindings-DotNet.ps1", "overwrite": "always" }
+      { "src": "scripts/binding/Generate-Bindings-DotNet.ps1", "dst": "scripts/Generate-Bindings-DotNet.ps1", "overwrite": "always" },
+      { "src": "scripts/common/Generate-NuGets-DotNet.ps1", "dst": "scripts/Generate-NuGets-DotNet.ps1", "overwrite": "always" },
+      { "src": "scripts/common/Helpers.ps1", "dst": "scripts/Helpers.ps1", "overwrite": "always" }
     ],
     "docs": [
       { "src": "templates/README.md", "dst": "README.md", "overwrite": "ifMissing" },
