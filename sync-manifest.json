@@ -18,6 +18,13 @@
                 "dst": ".github/workflows/sync-standards.yml",
                 "overwrite": "ifMissing"
             }
+        ],
+        "binding": [
+            {
+                "src": "scripts/binding/Generate-Bindings-DotNet.ps1",
+                "dst": "scripts/Generate-Bindings-DotNet.ps1",
+                "overwrite": "always"
+            }
         ]
     }
 }

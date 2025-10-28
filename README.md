@@ -29,9 +29,57 @@ Typical consumers include:
 │  └─ nuget-icon.png             # Official NuGet package icon (512x512)
 ├─ scripts/
 │  ├─ download-sync-script.ps1   # Helper to download sync script locally
-│  └─ sync-standards.ps1         # Synchronization script (PowerShell 7+)
+│  ├─ sync-standards.ps1         # Synchronization script (PowerShell 7+)
+│  └─ binding/
+│     └─ Generate-Bindings-DotNet.ps1 # Template for .NET binding generators
 ├─ LICENSE                       # Canonical license file
 └─ sync-manifest.json            # Manifest defining which files to sync
+```
+
+---
+
+## Binding repositories support
+
+This repository includes specialized scripts for **binding repositories** that generate C# bindings for native libraries. Binding repositories can use the "binding" group by adding it to their `.standards.override.json`:
+
+```json
+{
+  "schema": "2",
+  "groups": ["core", "binding"]
+}
+```
+
+### Generate-Bindings-DotNet.ps1
+
+A parametrized template script that replaces the duplicated `Generate-Bindings.ps1` scripts across multiple binding repositories. It supports .NET-based binding generators.
+
+#### Usage
+```powershell
+.\scripts\Generate-Bindings-DotNet.ps1 `
+  -GeneratorProject "MyLibGen\MyLibGen\MyLibGen.csproj" `
+  -GeneratorName "MyLib" `
+  [-BuildConfiguration "Release"] `
+  [-BuildVerbosity "normal"] `
+  [-TargetFramework "net8.0"] `
+  [-RuntimeIdentifier "win-x64"]
+```
+
+#### Parameters
+| Parameter | Description | Default | Required |
+|-----------|-------------|---------|----------|
+| `GeneratorProject` | Path to the generator .csproj file | - | Yes |
+| `GeneratorName` | Name used for display and logging | - | Yes |
+| `BuildConfiguration` | Build configuration (Debug/Release) | `Release` | No |
+| `BuildVerbosity` | MSBuild verbosity level | `normal` | No |
+| `TargetFramework` | .NET target framework | `net8.0` | No |
+| `RuntimeIdentifier` | Runtime identifier (e.g., win-x64) | `win-x64` | No |
+
+#### Example
+```powershell
+# Generic binding generation
+.\scripts\Generate-Bindings-DotNet.ps1 `
+  -GeneratorProject "MyLibGen\MyLibGen\MyLibGen.csproj" `
+  -GeneratorName "MyLib"
 ```
 
 ---
@@ -222,6 +270,9 @@ The manifest defines which files are distributed to all repositories using schem
       { "src": "tools/sync-standards.ps1", "dst": "tools/sync-standards.ps1" },
       { "src": ".github/workflows/sync-standards.yml", "dst": ".github/workflows/sync-standards.yml", "overwrite": "ifMissing" }
     ],
+    "binding": [
+      { "src": "scripts/binding/Generate-Bindings-DotNet.ps1", "dst": "scripts/Generate-Bindings-DotNet.ps1", "overwrite": "always" }
+    ],
     "docs": [
       { "src": "templates/README.md", "dst": "README.md", "overwrite": "ifMissing" },
       { "src": "docs/contributing.md", "dst": "CONTRIBUTING.md" }
@@ -385,6 +436,10 @@ The groups feature allows different types of repositories to receive different s
 **Core libraries** (group: `["core", "ci"]`):
 - License, NuGet icon, sync tools
 - CI workflows for building and testing
+
+**Binding repositories** (group: `["core", "binding"]`):
+- License, NuGet icon, sync tools
+- Standardized binding generation scripts
 
 **Documentation repositories** (group: `["core", "docs"]`):
 - License, basic tools
