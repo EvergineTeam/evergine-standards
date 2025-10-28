@@ -49,7 +49,7 @@ param (
     [bool]$IncludeSymbols = $false,
     [ValidateSet("snupkg", "symbols.nupkg")]
     [string]$SymbolsFormat = "snupkg",
-    [string]$HelpersPath = "$PSScriptRoot\..\common\Helpers.ps1"
+    [string]$HelpersPath = "$PSScriptRoot\Helpers.ps1"
 )
 
 # Import shared helper functions
