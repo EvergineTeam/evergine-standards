@@ -207,10 +207,10 @@ Describe "LogDebug Function" {
 
 Describe "Integration Scenarios" {
     Context "Real-world Parameter Combinations" {
-        It "Should work with MeshOptimizer-like parameters" {
+        It "Should work with sample binding parameters" {
             $params = @{
-                GeneratorProject   = "MeshOptimizerGen\MeshOptimizerGen\MeshOptimizerGen.csproj"
-                GeneratorName      = "MeshOptimizer"
+                GeneratorProject   = "SampleGen\SampleGen\SampleGen.csproj"
+                GeneratorName      = "SampleBinding"
                 BuildConfiguration = "Release"
                 TargetFramework    = "net8.0"
                 RuntimeIdentifier  = "win-x64"

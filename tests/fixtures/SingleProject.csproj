@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <PackageId>Evergine.Test.SingleProject</PackageId>
+    <PackageVersion>1.0.0</PackageVersion>
+    <Authors>Evergine Team</Authors>
+    <Description>Test package for single project scenario</Description>
+    <PackageTags>evergine;test</PackageTags>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+  </PropertyGroup>
+</Project>

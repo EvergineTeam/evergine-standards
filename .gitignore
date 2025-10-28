@@ -1,0 +1,25 @@
+# Build outputs
+bin/
+obj/
+
+# Test fixtures build outputs
+tests/fixtures/bin/
+tests/fixtures/obj/
+
+# NuGet packages generated during tests
+nupkgs/
+test-nupkgs/
+
+# Temporary files
+*.tmp
+temp/
+
+# Visual Studio / VS Code
+.vs/
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+
+# OS generated files
+.DS_Store
+Thumbs.db
