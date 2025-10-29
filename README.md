@@ -49,14 +49,15 @@ This repository includes specialized scripts for **binding repositories** that g
 }
 ```
 
+
 ### Generate-Bindings-DotNet.ps1
 
-A parametrized template script that replaces the duplicated `Generate-Bindings.ps1` scripts across multiple binding repositories. It supports .NET-based binding generators.
+A parametrized template script that replaces duplicated `Generate-Bindings.ps1` scripts across binding repositories. It supports .NET-based binding generators.
 
 #### Usage
 ```powershell
-.\scripts\Generate-Bindings-DotNet.ps1 `
-  -GeneratorProject "MyLibGen\MyLibGen\MyLibGen.csproj" `
+./scripts/Generate-Bindings-DotNet.ps1 `
+  -GeneratorProject "MyLibGen/MyLibGen/MyLibGen.csproj" `
   -GeneratorName "MyLib" `
   [-BuildConfiguration "Release"] `
   [-BuildVerbosity "normal"] `
@@ -77,10 +78,90 @@ A parametrized template script that replaces the duplicated `Generate-Bindings.p
 #### Example
 ```powershell
 # Generic binding generation
-.\scripts\Generate-Bindings-DotNet.ps1 `
-  -GeneratorProject "MyLibGen\MyLibGen\MyLibGen.csproj" `
+./scripts/Generate-Bindings-DotNet.ps1 `
+  -GeneratorProject "MyLibGen/MyLibGen/MyLibGen.csproj" `
   -GeneratorName "MyLib"
 ```
+
+
+### Generate-NuGets-DotNet.ps1
+
+A unified script for generating NuGet packages from .NET projects in binding repositories. This script replaces duplicated NuGet generation logic and ensures consistency across all bindings.
+
+#### Usage
+```powershell
+# Binding style (date-based version with revision)
+./scripts/Generate-NuGets-DotNet.ps1 -Revision 123 -Projects "SampleBinding/Evergine.Bindings.Sample/Evergine.Bindings.Sample.csproj"
+
+# Add-on style (direct version)
+./scripts/Generate-NuGets-DotNet.ps1 -Version "3.4.22.288-local" -Projects @("Source/Evergine.SampleAddon/Evergine.SampleAddon.csproj", "Source/Evergine.SampleAddon.Editor/Evergine.SampleAddon.Editor.csproj")
+
+# Using custom helpers path
+./scripts/Generate-NuGets-DotNet.ps1 -Revision 123 -Projects "test.csproj" -HelpersPath "C:/Scripts/MyHelpers.ps1"
+
+# Using legacy symbol format
+./scripts/Generate-NuGets-DotNet.ps1 -Version "1.0.0" -Projects "test.csproj" -SymbolsFormat "symbols.nupkg"
+```
+
+#### Parameters
+| Parameter         | Description                                         | Default         | Required |
+|-------------------|-----------------------------------------------------|-----------------|----------|
+| `Version`         | Direct version string for packages (add-ons)        | -               | Yes*     |
+| `Revision`        | Revision for date-based version (bindings)          | -               | Yes*     |
+| `Projects`        | Array of .csproj paths to pack (string or array)    | -               | Yes      |
+| `OutputFolderBase`| Base folder for NuGet package output                | `nupkgs`        | No       |
+| `BuildVerbosity`  | dotnet verbosity level                              | `normal`        | No       |
+| `BuildConfiguration`| Build configuration (Release/Debug)                | `Release`       | No       |
+| `IncludeSymbols`  | Include debug symbols in packages                   | `false`         | No       |
+| `SymbolsFormat`   | Symbol package format: 'snupkg' or 'symbols.nupkg'  | `snupkg`        | No       |
+| `HelpersPath`     | Path to Helpers.ps1 file                            | (auto)          | No       |
+
+* Either `Version` or `Revision` must be provided, but not both.
+
+#### Example
+```powershell
+# Binding style (date-based version with revision)
+./scripts/Generate-NuGets-DotNet.ps1 -Revision 123 -Projects "SampleBinding/Evergine.Bindings.Sample/Evergine.Bindings.Sample.csproj"
+
+# Add-on style (direct version)
+./scripts/Generate-NuGets-DotNet.ps1 -Version "3.4.22.288-local" -Projects @("Source/Evergine.SampleAddon/Evergine.SampleAddon.csproj", "Source/Evergine.SampleAddon.Editor/Evergine.SampleAddon.Editor.csproj")
+```
+
+---
+
+## Composite actions and reusable workflows
+
+This repository provides composite GitHub Actions for standardized build and packaging steps, and reusable workflows for CI. These can be referenced from any Evergine binding repository to ensure consistent automation.
+
+### Example: Using composite action for NuGet generation
+```yaml
+- name: Generate NuGets (.NET)
+  uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-nugets-dotnet@main
+  with:
+  script-path: ./scripts/Generate-NuGets-DotNet.ps1
+  projects: path/to/project1.csproj,path/to/project2.csproj
+  version: ${{ ... }}      # O revision: ${{ ... }} según el caso
+  output-folder: nupkgs
+  build-configuration: Release
+  build-verbosity: normal
+  include-symbols: false
+  symbols-format: snupkg
+```
+
+### Example: Using reusable workflow for CI
+```yaml
+jobs:
+  build:
+    uses: EvergineTeam/evergine-standards/.github/workflows/binding-ci-simple.yml@main
+    with:
+      configuration: Release
+```
+
+---
+
+## Synchronization and reuse in native binding repositories
+
+Native binding repositories (e.g., ktx, imgui) can reuse the .NET scripts and actions provided here for their managed components. To do so, ensure the scripts are available in the repo (via sync or direct reference) and invoke them as shown above. This allows unified NuGet generation even in mixed native/.NET bindings.
 
 ---
 
