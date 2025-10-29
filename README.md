@@ -22,18 +22,25 @@ Typical consumers include:
 
 ```
 /
+├─ .github/actions/
+│  ├─ binding-generate-bindings-dotnet/   # Composite action for binding generation
+│  └─ binding-generate-nugets-dotnet/     # Composite action for NuGet generation
 ├─ .github/workflows/
-│  ├─ _sync-standards-reusable.yml # Reusable GitHub Actions workflow
-│  └─ sync-standards.yml         # Template workflow for consumer repos
+│  ├─ _sync-standards-reusable.yml        # Reusable GitHub Actions workflow (sync)
+│  ├─ binding-ci-simple.yml               # Reusable CI workflow for bindings
+│  └─ sync-standards.yml                  # Template workflow for consumer repos
 ├─ assets/
-│  └─ nuget-icon.png             # Official NuGet package icon (512x512)
+│  └─ nuget-icon.png                      # Official NuGet package icon (512x512)
+├─ LICENSE                                # Canonical license file
 ├─ scripts/
-│  ├─ download-sync-script.ps1   # Helper to download sync script locally
-│  ├─ sync-standards.ps1         # Synchronization script (PowerShell 7+)
-│  └─ binding/
-│     └─ Generate-Bindings-DotNet.ps1 # Template for .NET binding generators
-├─ LICENSE                       # Canonical license file
-└─ sync-manifest.json            # Manifest defining which files to sync
+│  ├─ binding/
+│  │  └─ Generate-Bindings-DotNet.ps1     # Template for .NET binding generators
+│  ├─ common/
+│  │  ├─ Generate-NuGets-DotNet.ps1       # Unified NuGet generation script
+│  │  └─ Helpers.ps1                      # Shared PowerShell helpers
+│  ├─ download-sync-script.ps1            # Helper to download sync script locally
+│  └─ sync-standards.ps1                  # Synchronization script (PowerShell 7+)
+└─ sync-manifest.json                     # Manifest defining which files to sync
 ```
 
 ---
