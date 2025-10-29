@@ -1,0 +1,135 @@
+name: Binding CI (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      project-name:
+        description: 'Name of the project for notifications'
+        required: true
+        type: string
+      main-branch:
+        description: 'Main branch name (master/main)'
+        required: false
+        type: string
+        default: 'main'
+      version-param:
+        description: 'Parameter name for version (revision/Version)'
+        required: false
+        type: string
+        default: 'revision'
+      dotnet-version:
+        description: 'DotNet version to use'
+        required: false
+        type: string
+        default: '8.x'
+      nuget-version:
+        description: 'NuGet version to use'
+        required: false
+        type: string
+        default: '6.x'
+      bindings-script:
+        description: 'Path to the bindings generation script'
+        required: false
+        type: string
+        default: './Generate-Bindings-DotNet.ps1'
+      generator-project:
+        description: 'Path to the generator .csproj file'
+        required: true
+        type: string
+      generator-name:
+        description: 'Name of the generator/binding'
+        required: true
+        type: string
+      target-framework:
+        description: 'Target framework for the binding'
+        required: false
+        type: string
+        default: 'net8.0'
+      runtime-identifier:
+        description: 'Runtime identifier (optional, for platform-specific bindings)'
+        required: false
+        type: string
+        default: ''
+      nugets-script:
+        description: 'Path to the NuGet generation script'
+        required: false
+        type: string
+        default: './Generate-NuGets-DotNet.ps1'
+      projects:
+        description: 'Project(s) to pack (.csproj paths)'
+        required: true
+        type: string
+      output-folder:
+        description: 'Base folder for NuGet package output'
+        required: false
+        type: string
+        default: 'nupkgs'
+      build-verbosity:
+        description: 'dotnet verbosity level'
+        required: false
+        type: string
+        default: 'normal'
+      build-configuration:
+        description: 'Build configuration (Release, Debug, etc.)'
+        required: false
+        type: string
+        default: 'Release'
+      include-symbols:
+        description: 'Whether to include debug symbols in packages'
+        required: false
+        type: boolean
+        default: false
+      symbols-format:
+        description: 'Symbol package format (snupkg or symbols.nupkg)'
+        required: false
+        type: string
+        default: 'snupkg'
+      enable-email-notifications:
+        description: 'Enable email notifications on failure'
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      SENDGRID_TOKEN:
+        required: false
+      EMAIL_REPORT_LIST:
+        required: false
+      EMAIL_FROM:
+        required: false
+
+env:
+  nugetOutputPath: ${{ inputs.output-folder }}
+
+jobs:
+  build_and_publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: ${{ inputs.dotnet-version }}
+      - uses: nuget/setup-nuget@v2
+        with:
+          nuget-version: ${{ inputs.nuget-version }}
+      - name: Generate Bindings
+        id: build_bindings
+        shell: pwsh
+        run: |
+          $runtimeParam = if ("${{ inputs.runtime-identifier }}" -ne "") { "-RuntimeIdentifier '${{ inputs.runtime-identifier }}'" } else { "" }
+          & ${{ inputs.bindings-script }} -GeneratorProject "${{ inputs.generator-project }}" -GeneratorName "${{ inputs.generator-name }}" -TargetFramework "${{ inputs.target-framework }}" @($runtimeParam.Split(' ') | Where-Object { $_ })
+      - name: Generate NuGet packages
+        id: build_nugets
+        shell: pwsh
+        run: |
+          $symbolsParam = if (${{ inputs.include-symbols }}) { "-IncludeSymbols `$true -SymbolsFormat '${{ inputs.symbols-format }}'" } else { "-IncludeSymbols `$false" }
+          & ${{ inputs.nugets-script }} -Projects "${{ inputs.projects }}" -OutputFolderBase "${{ inputs.output-folder }}" -BuildVerbosity "${{ inputs.build-verbosity }}" -BuildConfiguration "${{ inputs.build-configuration }}" @($symbolsParam.Split(' ') | Where-Object { $_ })
+      - name: SendGrid Mail Action
+        if: ${{ failure() && inputs.enable-email-notifications }}
+        uses: mmichailidis/sendgrid-mail-action@v1.1
+        with:
+          sendgrid-token: ${{ secrets.SENDGRID_TOKEN }}
+          mail: ${{ secrets.EMAIL_REPORT_LIST }}
+          from: ${{ secrets.EMAIL_FROM }}
+          subject: ${{ inputs.project-name }} CI build has failed
+          individual: false
+          text: something went wrong when building ${{ inputs.project-name }}

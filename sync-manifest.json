@@ -34,6 +34,11 @@
                 "src": "scripts/common/Helpers.ps1",
                 "dst": "scripts/Helpers.ps1",
                 "overwrite": "always"
+            },
+            {
+                "src": "workflows/binding/CI.yml",
+                "dst": ".github/workflows/CI.yml",
+                "overwrite": "ifMissing"
             }
         ]
     }
