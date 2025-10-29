@@ -1,0 +1,80 @@
+name: 'Generate .NET NuGet Packages'
+description: 'Generates NuGet packages for .NET projects using dotnet pack (Generate-NuGets-DotNet.ps1)'
+author: 'Evergine Team'
+
+inputs:
+  script-path:
+    description: 'Path to the Generate-NuGets-DotNet.ps1 script'
+    required: false
+    default: './Generate-NuGets-DotNet.ps1'
+  version:
+    description: 'Direct version string to use for packages (e.g., "3.4.22.288-local"). Cannot be used with revision.'
+    required: false
+    default: ''
+  revision:
+    description: 'Revision number to append to date-based version (e.g., "123" -> "2025.10.29.123"). Cannot be used with version.'
+    required: false
+    default: ''
+  projects:
+    description: 'Comma-separated or newline-separated list of .csproj paths to pack'
+    required: true
+  output-folder:
+    description: 'Base folder for NuGet package output'
+    required: false
+    default: 'nupkgs'
+  build-verbosity:
+    description: 'dotnet verbosity level'
+    required: false
+    default: 'normal'
+  build-configuration:
+    description: 'Build configuration (Release, Debug, etc.)'
+    required: false
+    default: 'Release'
+  include-symbols:
+    description: 'Whether to include debug symbols in packages'
+    required: false
+    default: 'false'
+  symbols-format:
+    description: 'Symbol package format: snupkg (modern) or symbols.nupkg (legacy)'
+    required: false
+    default: 'snupkg'
+
+
+runs:
+  using: "composite"
+  steps:
+    - name: Generate NuGet Packages
+      id: generate
+      shell: pwsh
+      run: |
+        $scriptPath = "${{ inputs.script-path }}"
+        if (-not (Test-Path $scriptPath)) {
+          Write-Host "ERROR: script not found at: $scriptPath" -ForegroundColor Red
+          exit 1
+        }
+        # Build arguments
+        $args = @{
+          Projects = "${{ inputs.projects }}"
+          OutputFolderBase = "${{ inputs.output-folder }}"
+          BuildVerbosity = "${{ inputs.build-verbosity }}"
+          BuildConfiguration = "${{ inputs.build-configuration }}"
+          IncludeSymbols = [System.Convert]::ToBoolean("${{ inputs.include-symbols }}")
+          SymbolsFormat = "${{ inputs.symbols-format }}"
+        }
+        # Add version or revision (mutually exclusive)
+        $version = "${{ inputs.version }}"
+        $revision = "${{ inputs.revision }}"
+        if (-not [string]::IsNullOrWhiteSpace($version) -and -not [string]::IsNullOrWhiteSpace($revision)) {
+          Write-Host "ERROR: Cannot specify both version and revision" -ForegroundColor Red
+          exit 1
+        }
+        if (-not [string]::IsNullOrWhiteSpace($version)) {
+          $args.Version = $version
+        } elseif (-not [string]::IsNullOrWhiteSpace($revision)) {
+          $args.Revision = $revision
+        } else {
+          Write-Host "ERROR: Must specify either version or revision" -ForegroundColor Red
+          exit 1
+        }
+        # Execute script
+        & $scriptPath @args
