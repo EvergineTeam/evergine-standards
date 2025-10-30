@@ -22,21 +22,21 @@
         "binding": [
             {
                 "src": "scripts/binding/Generate-Bindings-DotNet.ps1",
-                "dst": "scripts/Generate-Bindings-DotNet.ps1",
+                "dst": "build/scripts/Generate-Bindings-DotNet.ps1",
                 "overwrite": "always"
             },
             {
                 "src": "scripts/common/Generate-NuGets-DotNet.ps1",
-                "dst": "scripts/Generate-NuGets-DotNet.ps1",
+                "dst": "build/scripts/Generate-NuGets-DotNet.ps1",
                 "overwrite": "always"
             },
             {
                 "src": "scripts/common/Helpers.ps1",
-                "dst": "scripts/Helpers.ps1",
+                "dst": "build/scripts/Helpers.ps1",
                 "overwrite": "always"
             },
             {
-                "src": "workflows/binding/CI.yml",
+                "src": "workflows/binding/template-common-ci.yml",
                 "dst": ".github/workflows/CI.yml",
                 "overwrite": "ifMissing"
             }

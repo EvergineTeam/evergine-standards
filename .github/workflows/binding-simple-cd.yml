@@ -62,17 +62,17 @@ on:
         description: 'Path to the Generate-Bindings-DotNet.ps1 script'
         required: false
         type: string
-        default: './Generate-Bindings-DotNet.ps1'
+        default: 'build/scripts/Generate-Bindings-DotNet.ps1'
       nugets-script-path:
         description: 'Path to the Generate-NuGets-DotNet.ps1 script'
         required: false
         type: string
-        default: './Generate-NuGets-DotNet.ps1'
+        default: 'build/scripts/Generate-NuGets-DotNet.ps1'
       helpers-path:
         description: 'Path to the Helpers.ps1 file. Defaults to Helpers.ps1 in the same directory as the script.'
         required: false
         type: string
-        default: './Helpers.ps1'
+        default: 'build/scripts/Helpers.ps1'
       publish-enabled:
         description: 'Publish to Nuget.org'
         required: false
