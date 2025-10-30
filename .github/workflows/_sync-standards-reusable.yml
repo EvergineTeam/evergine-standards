@@ -77,14 +77,14 @@ jobs:
       - name: Run sync script
         shell: pwsh
         run: |
-          ${{ inputs.script_path }} `
+          ./${{ inputs.script_path }} `
             -Org "${{ inputs.org }}" `
             -Repo "${{ inputs.repo }}" `
             -Ref "${{ inputs.ref }}" `
             ${{ inputs.dry_run && '-DryRun' || '' }}
 
       - name: Commit, push or PR update
-        uses: ./.github/actions/commit-and-push-or-pr-update
+        uses: EvergineTeam/evergine-standards/.github/actions/commit-and-push-or-pr-update@feature/sync-bindings
         with:
           commit_message: ${{ inputs.commit_message }}
           mode: ${{ inputs.mode }}

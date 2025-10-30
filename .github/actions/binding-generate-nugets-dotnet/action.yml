@@ -85,4 +85,4 @@ runs:
           exit 1
         }
         # Execute script
-        & $scriptPath @args
+        & ./$scriptPath @args

@@ -41,7 +41,7 @@ runs:
           Write-Host "ERROR: script not found at: $scriptPath" -ForegroundColor Red
           exit 1
         }
-        & $scriptPath `
+        & ./$scriptPath `
           -GeneratorProject "${{ inputs.generator-project }}" `
           -GeneratorName "${{ inputs.generator-name }}" `
           -TargetFramework "${{ inputs.target-framework }}" `
