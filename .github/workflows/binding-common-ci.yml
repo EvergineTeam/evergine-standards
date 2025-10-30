@@ -56,6 +56,7 @@ on:
       helpers-path:
         description: 'Path to the Helpers.ps1 file. Defaults to Helpers.ps1 in the same directory as the script.'
         required: false
+        type: string
         default: './Helpers.ps1'
       version:
         description: 'Direct version string to use for packages (e.g., "3.4.22.288-local"). Cannot be used with revision.'

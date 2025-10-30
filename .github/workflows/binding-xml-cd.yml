@@ -64,6 +64,7 @@ on:
       output-folder:
         description: 'Base folder for NuGet package output'
         required: false
+        type: string
         default: 'nupkgs'
       include-symbols:
         description: 'Whether to include debug symbols in packages'
