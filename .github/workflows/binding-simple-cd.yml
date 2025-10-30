@@ -135,6 +135,10 @@ jobs:
           include-symbols: ${{ inputs.include-symbols }}
           symbols-format: ${{ inputs.symbols-format }}
 
+      - name: List generated NuGets
+        run: |
+          ls ${{ inputs.output-folder }}/*.nupkg
+
       - name: Publish NuGet
         if: ${{ success() && inputs.publish-enabled == true }}
         env:
