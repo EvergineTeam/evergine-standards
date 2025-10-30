@@ -12,11 +12,6 @@
             {
                 "src": "assets/nuget-icon.png",
                 "dst": "assets/nuget-icon.png"
-            },
-            {
-                "src": ".github/workflows/sync-standards.yml",
-                "dst": ".github/workflows/sync-standards.yml",
-                "overwrite": "ifMissing"
             }
         ],
         "binding": [
@@ -34,11 +29,6 @@
                 "src": "scripts/common/Helpers.ps1",
                 "dst": "build/scripts/Helpers.ps1",
                 "overwrite": "always"
-            },
-            {
-                "src": "workflows/binding/template-common-ci.yml",
-                "dst": ".github/workflows/CI.yml",
-                "overwrite": "ifMissing"
             }
         ]
     }
