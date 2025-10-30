@@ -1,7 +1,7 @@
-name: Binding CI (Reusable)
+name: Binding Simple CD (Reusable)
 
 description: >
-  Reusable workflow for bindings.
+  Reusable workflow for publishing NuGets for pure .NET bindings (no XML update).
 
 on:
   workflow_call:
@@ -38,11 +38,22 @@ on:
         required: false
         type: string
         default: 'Release'
-      nuget-artifacts:
-        description: 'Upload generated NuGets as workflow artifacts (true/false)'
+      version:
+        description: 'Direct version string to use for packages (e.g., "3.4.22.288-local")'
         required: false
-        type: boolean
-        default: false
+        default: ''
+      output-folder:
+        description: 'Base folder for NuGet package output'
+        required: false
+        default: 'nupkgs'
+      include-symbols:
+        description: 'Whether to include debug symbols in packages'
+        required: false
+        default: 'false'
+      symbols-format:
+        description: 'Symbol package format: snupkg (modern) or symbols.nupkg (legacy)'
+        required: false
+        default: 'snupkg'
       bindings-script-path:
         description: 'Path to the Generate-Bindings-DotNet.ps1 script'
         required: false
@@ -57,29 +68,29 @@ on:
         description: 'Path to the Helpers.ps1 file. Defaults to Helpers.ps1 in the same directory as the script.'
         required: false
         default: './Helpers.ps1'
-      version:
-        description: 'Direct version string to use for packages (e.g., "3.4.22.288-local"). Cannot be used with revision.'
+      publish-enabled:
+        description: 'Publish to Nuget.org'
         required: false
-        default: ''
-      revision:
-        description: 'Revision number to append to date-based version (e.g., "123" -> "2025.10.29.123"). Cannot be used with version.'
-        required: false
-        default: ''
-      include-symbols:
-        description: 'Whether to include debug symbols in packages'
-        required: false
-        default: 'false'
-      symbols-format:
-        description: 'Symbol package format: snupkg (modern) or symbols.nupkg (legacy)'
-        required: false
-        default: 'snupkg'
+        type: boolean
+        default: true
       dotnet-version:
         description: 'Version of .NET SDK to use (e.g., 8.x)'
         required: false
         type: string
         default: '8.x'
+      nuget-version:
+        description: 'Version of NuGet CLI to use (e.g., 6.x)'
+        required: false
+        type: string
+        default: '6.x'
+      enable-email-notifications:
+        description: 'Enable email notifications on failure'
+        required: false
+        type: boolean
+        default: false
+
 jobs:
-  update_and_generate:
+  build_and_publish:
     runs-on: windows-latest
     steps:
       - name: Checkout repository
@@ -89,6 +100,11 @@ jobs:
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ inputs.dotnet-version }}
+
+      - name: Setup NuGet CLI
+        uses: nuget/setup-nuget@v2
+        with:
+          nuget-version: ${{ inputs.nuget-version }}
 
       - name: Generate bindings
         uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-bindings-dotnet@main
@@ -101,31 +117,35 @@ jobs:
           build-verbosity: ${{ inputs.build-verbosity }}
           build-configuration: ${{ inputs.build-configuration }}
 
-      - name: Build binding project
-        if: inputs.nuget-artifacts == false
-        shell: pwsh
-        run: |
-          dotnet build "${{ inputs.binding-project }}" -c "${{ inputs.build-configuration }}" -v "${{ inputs.build-verbosity }}" --framework "${{ inputs.target-framework }}"
-
       - name: Generate NuGets
-        if: inputs.nuget-artifacts == true
         uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-nugets-dotnet@main
         with:
           script-path: ${{ inputs.nugets-script-path }}
           helpers-path: ${{ inputs.helpers-path }}
-          version: ${{ inputs.version }}
-          revision: ${{ inputs.revision }}
           projects: ${{ inputs.binding-project }}
-          target-framework: ${{ inputs.target-framework }}
-          runtime-identifier: ${{ inputs.runtime-identifier }}
+          output-folder: ${{ inputs.output-folder }}
           build-verbosity: ${{ inputs.build-verbosity }}
           build-configuration: ${{ inputs.build-configuration }}
+          version: ${{ inputs.version }}
           include-symbols: ${{ inputs.include-symbols }}
           symbols-format: ${{ inputs.symbols-format }}
 
-      - name: Upload NuGets as artifact
-        if: inputs.nuget-artifacts == true
-        uses: actions/upload-artifact@v4
+      - name: Publish NuGet
+        if: ${{ success() && inputs.publish-enabled == true }}
+        env:
+          token: ${{ secrets.EVERGINE_NUGETORG_TOKEN }}
+        run: |
+          cd ${{ inputs.output-folder }}
+          ls *.nupkg
+          dotnet nuget push "**/*.nupkg" --skip-duplicate --no-symbols -k "$env:token" -s https://api.nuget.org/v3/index.json
+
+      - name: SendGrid Mail Action
+        if: ${{ failure() && inputs.enable-email-notifications == true }}
+        uses: mmichailidis/sendgrid-mail-action@v1.1
         with:
-          name: nugets
-          path: '**/*.nupkg'
+          sendgrid-token: ${{ secrets.WAVE_SENDGRID_TOKEN }}
+          mail: ${{ secrets.EVERGINE_EMAILREPORT_LIST }}
+          from: ${{ secrets.EVERGINE_EMAIL }}
+          subject: Binding ${{ inputs.generator-name }} - CD NuGet publish failed
+          individual: false
+          text: Something went wrong when publishing NuGets for binding ${{ inputs.generator-name }}.

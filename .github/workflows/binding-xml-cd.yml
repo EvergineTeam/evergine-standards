@@ -1,0 +1,226 @@
+name: Binding XML CD (Reusable)
+
+description: >
+  Reusable workflow for publishing NuGets for bindings that require XML download and comparison.
+
+on:
+  workflow_call:
+    inputs:
+      xml-url:
+        description: 'URL to download the XML definition file (e.g., vk.xml, xr.xml)'
+        required: true
+        type: string
+      xml-path:
+        description: 'Local path to store the XML file (e.g., vk.xml, xr.xml, KhronosRegistry/xr.xml)'
+        required: true
+        type: string
+      generator-project:
+        description: 'Path to the generator .csproj file'
+        required: true
+        type: string
+      generator-name:
+        description: 'Name of the generator/binding'
+        required: true
+        type: string
+      binding-project:
+        description: 'Path to the binding .csproj file'
+        required: true
+        type: string
+      target-framework:
+        description: 'Target framework for the binding'
+        required: false
+        type: string
+        default: 'net8.0'
+      dotnet-version:
+        description: 'Version of .NET SDK to use (e.g., 8.x)'
+        required: false
+        type: string
+        default: '8.x'
+      nuget-version:
+        description: 'Version of NuGet CLI to use (e.g., 6.x)'
+        required: false
+        type: string
+        default: '6.x'
+      runtime-identifier:
+        description: 'Runtime identifier (optional, for platform-specific bindings)'
+        required: false
+        type: string
+        default: 'win-x64'
+      build-verbosity:
+        description: 'dotnet verbosity level'
+        required: false
+        type: string
+        default: 'normal'
+      build-configuration:
+        description: 'Build configuration (Release, Debug, etc.)'
+        required: false
+        type: string
+        default: 'Release'
+      version:
+        description: 'Direct version string to use for packages (e.g., "3.4.22.288-local")'
+        required: false
+        default: ''
+      output-folder:
+        description: 'Base folder for NuGet package output'
+        required: false
+        default: 'nupkgs'
+      include-symbols:
+        description: 'Whether to include debug symbols in packages'
+        required: false
+        default: 'false'
+      symbols-format:
+        description: 'Symbol package format: snupkg (modern) or symbols.nupkg (legacy)'
+        required: false
+        default: 'snupkg'
+      bindings-script-path:
+        description: 'Path to the Generate-Bindings-DotNet.ps1 script'
+        required: false
+        type: string
+        default: './Generate-Bindings-DotNet.ps1'
+      nugets-script-path:
+        description: 'Path to the Generate-NuGets-DotNet.ps1 script'
+        required: false
+        type: string
+        default: './Generate-NuGets-DotNet.ps1'
+      helpers-path:
+        description: 'Path to the Helpers.ps1 file. Defaults to Helpers.ps1 in the same directory as the script.'
+        required: false
+        default: './Helpers.ps1'
+      publish-enabled:
+        description: 'Publish to Nuget.org'
+        required: false
+        type: boolean
+        default: true
+      enable-email-notifications:
+        description: 'Enable email notifications on failure'
+        required: false
+        type: boolean
+        default: true
+jobs:
+  check_xml:
+    runs-on: windows-latest
+    outputs:
+      xml_changed: ${{ steps.compare_hashes.outputs.xml_changed }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Extract XML file name and location
+        id: xml_vars
+        shell: pwsh
+        run: |
+          $xmlPath = "${{ inputs.xml-path }}"
+          $xmlFile = Split-Path $xmlPath -Leaf
+          $xmlDir = Split-Path $xmlPath -Parent
+          echo "xml_file=$xmlFile" >> $env:GITHUB_ENV
+          echo "xml_dir=$xmlDir" >> $env:GITHUB_ENV
+          echo "xml_file_tmp=${xmlFile}_tmp" >> $env:GITHUB_ENV
+      - name: Download latest XML definition
+        uses: carlosperate/download-file-action@v1.0.3
+        with:
+          file-url: ${{ inputs.xml-url }}
+          file-name: ${{ env.xml_file_tmp }}
+          location: ${{ env.xml_dir }}
+
+      - name: Compare XML hashes
+        id: compare_hashes
+        shell: pwsh
+        run: |
+          $xmlPath = "${{ inputs.xml-path }}"
+          $xmlTmpPath = Join-Path "$env.xml_dir" "$env.xml_file_tmp"
+          $hash_current = if (Test-Path $xmlPath) { Get-FileHash $xmlPath -Algorithm SHA256 | Select-Object -ExpandProperty Hash } else { '' }
+          $hash_new = Get-FileHash $xmlTmpPath -Algorithm SHA256 | Select-Object -ExpandProperty Hash
+          $changed = $hash_current -ne $hash_new
+          echo "xml_changed=$changed" >> $GITHUB_OUTPUT
+          Write-Host "Current hash: $hash_current"
+          Write-Host "New hash: $hash_new"
+          Write-Host "XML changed: $changed"
+
+  build_and_publish:
+    needs: check_xml
+    if: needs.check_xml.outputs.xml_changed == 'true'
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Extract XML file name and location
+        id: xml_vars
+        shell: pwsh
+        run: |
+          $xmlPath = "${{ inputs.xml-path }}"
+          $xmlFile = Split-Path $xmlPath -Leaf
+          $xmlDir = Split-Path $xmlPath -Parent
+          echo "xml_file=$xmlFile" >> $env:GITHUB_ENV
+          echo "xml_dir=$xmlDir" >> $env:GITHUB_ENV
+
+      - name: Download latest XML definition
+        uses: carlosperate/download-file-action@v1.0.3
+        with:
+          file-url: ${{ inputs.xml-url }}
+          file-name: ${{ env.xml_file }}
+          location: ${{ env.xml_dir }}
+
+      - name: Commit, push or PR XML update
+        uses: EvergineTeam/evergine-standards/.github/actions/commit-and-push-or-pr-update@main
+        with:
+          commit_message: "Update XML file for binding ${{ inputs.generator-name }}"
+          mode: auto
+          labels: xml
+          pr_branch_name: chore/update-xml-${{ inputs.generator-name }}
+          pr_title: "Update XML for ${{ inputs.generator-name }}"
+          pr_body: "Automated update of XML file for binding ${{ inputs.generator-name }}."
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: ${{ inputs.dotnet-version }}
+
+      - name: Setup NuGet CLI
+        uses: nuget/setup-nuget@v2
+        with:
+          nuget-version: ${{ inputs.nuget-version }}
+
+      - name: Generate bindings
+        uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-bindings-dotnet@main
+        with:
+          script-path: ${{ inputs.bindings-script-path }}
+          generator-project: ${{ inputs.generator-project }}
+          generator-name: ${{ inputs.generator-name }}
+          target-framework: ${{ inputs.target-framework }}
+          runtime-identifier: ${{ inputs.runtime-identifier }}
+          build-verbosity: ${{ inputs.build-verbosity }}
+          build-configuration: ${{ inputs.build-configuration }}
+
+      - name: Generate NuGets
+        uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-nugets-dotnet@main
+        with:
+          script-path: ${{ inputs.nugets-script-path }}
+          helpers-path: ${{ inputs.helpers-path }}
+          projects: ${{ inputs.binding-project }}
+          output-folder: ${{ inputs.output-folder }}
+          build-verbosity: ${{ inputs.build-verbosity }}
+          build-configuration: ${{ inputs.build-configuration }}
+          version: ${{ inputs.version }}
+          include-symbols: ${{ inputs.include-symbols }}
+          symbols-format: ${{ inputs.symbols-format }}
+
+      - name: Publish NuGet
+        if: ${{ success() && inputs.publish-enabled == true }}
+        env:
+          token: ${{ secrets.EVERGINE_NUGETORG_TOKEN }}
+        run: |
+          cd ${{ inputs.output-folder }}
+          ls *.nupkg
+          dotnet nuget push "**/*.nupkg" --skip-duplicate --no-symbols -k "$env:token" -s https://api.nuget.org/v3/index.json
+
+      - name: SendGrid Mail Action
+        if: ${{ failure() && inputs.enable-email-notifications == true }}
+        uses: mmichailidis/sendgrid-mail-action@v1.1
+        with:
+          sendgrid-token: ${{ secrets.WAVE_SENDGRID_TOKEN }}
+          mail: ${{ secrets.EVERGINE_EMAILREPORT_LIST }}
+          from: ${{ secrets.EVERGINE_EMAIL }}
+          subject: Binding ${{ inputs.generator-name }} - CD NuGet publish failed
+          individual: false
+          text: Something went wrong when publishing NuGets for binding ${{ inputs.generator-name }}.
