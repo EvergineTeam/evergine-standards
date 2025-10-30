@@ -83,6 +83,11 @@ jobs:
             -Ref "${{ inputs.ref }}" `
             ${{ inputs.dry_run && '-DryRun' || '' }}
 
+      - name: Remove downloaded sync script
+        if: steps.check_local.outputs.use_local == 'false'
+        run: |
+          rm "${{ inputs.script_path }}"
+
       - name: Commit, push or PR update
         uses: EvergineTeam/evergine-standards/.github/actions/commit-and-push-or-pr-update@feature/sync-bindings
         with:
