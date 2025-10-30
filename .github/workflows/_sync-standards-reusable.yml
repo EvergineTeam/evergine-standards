@@ -71,7 +71,7 @@ jobs:
       - name: Download sync script
         if: steps.check_local.outputs.use_local == 'false'
         run: |
-          curl -o "${{ inputs.script_path }}" \
+          curl -o "${{ github.workspace }}/${{ inputs.script_path }}" \
                "https://raw.githubusercontent.com/${{ inputs.org }}/${{ inputs.repo }}/${{ inputs.ref }}/scripts/sync-standards.ps1"
 
       - name: Run sync script
