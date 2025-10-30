@@ -167,7 +167,7 @@ jobs:
           location: ${{ env.xml_dir }}
 
       - name: Commit, push or PR XML update
-        uses: EvergineTeam/evergine-standards/.github/actions/commit-and-push-or-pr-update@main
+        uses: EvergineTeam/evergine-standards/.github/actions/commit-and-push-or-pr-update@feature/sync-bindings
         with:
           commit_message: "Update XML file for binding ${{ inputs.generator-name }}"
           mode: auto
@@ -187,7 +187,7 @@ jobs:
           nuget-version: ${{ inputs.nuget-version }}
 
       - name: Generate bindings
-        uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-bindings-dotnet@main
+        uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-bindings-dotnet@feature/sync-bindings
         with:
           script-path: ${{ inputs.bindings-script-path }}
           generator-project: ${{ inputs.generator-project }}
@@ -198,7 +198,7 @@ jobs:
           build-configuration: ${{ inputs.build-configuration }}
 
       - name: Generate NuGets
-        uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-nugets-dotnet@main
+        uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-nugets-dotnet@feature/sync-bindings
         with:
           script-path: ${{ inputs.nugets-script-path }}
           helpers-path: ${{ inputs.helpers-path }}

@@ -44,7 +44,7 @@ jobs:
     permissions:
       contents: write  # allow push commits
       pull-requests: write
-    uses: EvergineTeam/evergine-standards/.github/workflows/_sync-standards-reusable.yml@main
+    uses: EvergineTeam/evergine-standards/.github/workflows/_sync-standards-reusable.yml@feature/sync-bindings
     with:
       org:  ${{ github.event.inputs.org  || 'EvergineTeam' }}
       repo: ${{ github.event.inputs.repo || 'evergine-standards' }}

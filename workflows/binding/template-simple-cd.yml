@@ -12,7 +12,7 @@ on:
 
 jobs:
   cd:
-    uses: EvergineTeam/evergine-standards/.github/workflows/binding-simple-cd.yml@main
+    uses: EvergineTeam/evergine-standards/.github/workflows/binding-simple-cd.yml@feature/sync-bindings
     with:
       generator-project: "YourBindingGen/YourBindingGen/YourBindingGen.csproj"  # Path to your generator .csproj
       generator-name: "YourBindingGen"             # Name of your generator executable

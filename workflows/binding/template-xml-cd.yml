@@ -12,7 +12,7 @@ on:
 
 jobs:
   publish:
-    uses: EvergineTeam/evergine-standards/.github/workflows/binding-xml-cd.yml@main
+    uses: EvergineTeam/evergine-standards/.github/workflows/binding-xml-cd.yml@feature/sync-bindings
     with:
       xml-url: "https://raw.githubusercontent.com/KhronosGroup/Vulkan-Docs/main/xml/vk.xml"
       xml-path: "vk.xml"
