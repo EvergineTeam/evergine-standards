@@ -84,7 +84,7 @@ on:
         type: string
         default: '8.x'
 jobs:
-  update_and_generate:
+  build_and_generate:
     runs-on: windows-latest
     steps:
       - name: Checkout repository
@@ -121,8 +121,6 @@ jobs:
           version: ${{ inputs.version }}
           revision: ${{ inputs.revision }}
           projects: ${{ inputs.binding-project }}
-          target-framework: ${{ inputs.target-framework }}
-          runtime-identifier: ${{ inputs.runtime-identifier }}
           build-verbosity: ${{ inputs.build-verbosity }}
           build-configuration: ${{ inputs.build-configuration }}
           include-symbols: ${{ inputs.include-symbols }}

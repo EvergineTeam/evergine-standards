@@ -6,6 +6,7 @@
 name: CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [ "main" ]
   pull_request:
@@ -16,7 +17,7 @@ jobs:
     uses: EvergineTeam/evergine-standards/.github/workflows/binding-common-ci.yml@feature/sync-bindings
     with:
       generator-project: "YourBindingGen/YourBindingGen/YourBindingGen.csproj"  # Path to your generator .csproj
-      generator-name: "YourBindingGen"             # Name of your generator executable
+      generator-name: "YourBinding"                # Name of your generator executable
       binding-project: "Bindings/Evergine.Bindings.YourBinding/Evergine.Bindings.YourBinding.csproj" # Path to your binding .csproj
       target-framework: "net8.0"                   # Target framework for generator/binding
       runtime-identifier: "win-x64"                # Runtime identifier (win-x64, linux-x64, etc.)
