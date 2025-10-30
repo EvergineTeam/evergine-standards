@@ -98,7 +98,19 @@ on:
         required: false
         type: boolean
         default: false
-
+    secrets:
+      NUGET_UPLOAD_TOKEN:
+        description: 'NuGet.org API key for publishing packages'
+        required: true
+      WAVE_SENDGRID_TOKEN:
+        description: 'SendGrid API key for email notifications'
+        required: false
+      EVERGINE_EMAILREPORT_LIST:
+        description: 'Email addresses to send failure notifications to'
+        required: false
+      EVERGINE_EMAIL:
+        description: 'Sender email address for notifications' 
+        required: false
 jobs:
   build_and_publish:
     runs-on: windows-latest
@@ -148,7 +160,7 @@ jobs:
       - name: Publish NuGet
         if: ${{ success() && inputs.publish-enabled == true }}
         env:
-          token: ${{ secrets.EVERGINE_NUGETORG_TOKEN }}
+          token: ${{ secrets.NUGET_UPLOAD_TOKEN }}
         run: |
           cd ${{ inputs.output-folder }}
           ls *.nupkg

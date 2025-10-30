@@ -28,7 +28,7 @@ jobs:
       publish-enabled: true
       enable-email-notifications: false
     secrets:
-      EVERGINE_NUGETORG_TOKEN: ${{ secrets.EVERGINE_NUGETORG_TOKEN }}
+      NUGET_UPLOAD_TOKEN: ${{ secrets.EVERGINE_NUGETORG_TOKEN }}
       WAVE_SENDGRID_TOKEN: ${{ secrets.WAVE_SENDGRID_TOKEN }}
       EVERGINE_EMAILREPORT_LIST: ${{ secrets.EVERGINE_EMAILREPORT_LIST }}
       EVERGINE_EMAIL: ${{ secrets.EVERGINE_EMAIL }}
