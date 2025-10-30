@@ -38,11 +38,6 @@ on:
         required: false
         type: string
         default: 'Release'
-      main-branch:
-        description: 'Main branch name (master/main)'
-        required: false
-        type: string
-        default: 'main'
       nuget-artifacts:
         description: 'Upload generated NuGets as workflow artifacts (true/false)'
         required: false
@@ -62,6 +57,22 @@ on:
         description: 'Path to the Helpers.ps1 file. Defaults to Helpers.ps1 in the same directory as the script.'
         required: false
         default: './Helpers.ps1'
+      version:
+        description: 'Direct version string to use for packages (e.g., "3.4.22.288-local"). Cannot be used with revision.'
+        required: false
+        default: ''
+      revision:
+        description: 'Revision number to append to date-based version (e.g., "123" -> "2025.10.29.123"). Cannot be used with version.'
+        required: false
+        default: ''
+      include-symbols:
+        description: 'Whether to include debug symbols in packages'
+        required: false
+        default: 'false'
+      symbols-format:
+        description: 'Symbol package format: snupkg (modern) or symbols.nupkg (legacy)'
+        required: false
+        default: 'snupkg'
 jobs:
   update_and_generate:
     runs-on: windows-latest
@@ -91,11 +102,15 @@ jobs:
         with:
           script-path: ${{ inputs.nugets-script-path }}
           helpers-path: ${{ inputs.helpers-path }}
-          binding-project: ${{ inputs.binding-project }}
+          version: ${{ inputs.version }}
+          revision: ${{ inputs.revision }}
+          projects: ${{ inputs.binding-project }}
           target-framework: ${{ inputs.target-framework }}
           runtime-identifier: ${{ inputs.runtime-identifier }}
           build-verbosity: ${{ inputs.build-verbosity }}
           build-configuration: ${{ inputs.build-configuration }}
+          include-symbols: ${{ inputs.include-symbols }}
+          symbols-format: ${{ inputs.symbols-format }}
 
       - name: Upload NuGets as artifact
         if: inputs.nuget-artifacts == true
