@@ -61,6 +61,11 @@ on:
         required: false
         type: string
         default: ''
+      revision:
+        description: 'Revision number to append to date-based version (e.g., "123" -> "2025.10.29.123"). Cannot be used with version.'
+        required: false
+        type: string
+        default: ''
       output-folder:
         description: 'Base folder for NuGet package output'
         required: false
@@ -207,6 +212,7 @@ jobs:
           build-verbosity: ${{ inputs.build-verbosity }}
           build-configuration: ${{ inputs.build-configuration }}
           version: ${{ inputs.version }}
+          revision: ${{ inputs.revision }}
           include-symbols: ${{ inputs.include-symbols }}
           symbols-format: ${{ inputs.symbols-format }}
 
