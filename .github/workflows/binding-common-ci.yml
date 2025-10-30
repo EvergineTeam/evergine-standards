@@ -60,18 +60,22 @@ on:
       version:
         description: 'Direct version string to use for packages (e.g., "3.4.22.288-local"). Cannot be used with revision.'
         required: false
+        type: string
         default: ''
       revision:
         description: 'Revision number to append to date-based version (e.g., "123" -> "2025.10.29.123"). Cannot be used with version.'
         required: false
+        type: string
         default: ''
       include-symbols:
         description: 'Whether to include debug symbols in packages'
         required: false
-        default: 'false'
+        type: boolean
+        default: false
       symbols-format:
         description: 'Symbol package format: snupkg (modern) or symbols.nupkg (legacy)'
         required: false
+        type: string
         default: 'snupkg'
       dotnet-version:
         description: 'Version of .NET SDK to use (e.g., 8.x)'

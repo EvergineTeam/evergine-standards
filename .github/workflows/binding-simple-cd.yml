@@ -41,18 +41,22 @@ on:
       version:
         description: 'Direct version string to use for packages (e.g., "3.4.22.288-local")'
         required: false
+        type: string
         default: ''
       output-folder:
         description: 'Base folder for NuGet package output'
         required: false
+        type: string
         default: 'nupkgs'
       include-symbols:
         description: 'Whether to include debug symbols in packages'
         required: false
-        default: 'false'
+        type: boolean
+        default: false
       symbols-format:
         description: 'Symbol package format: snupkg (modern) or symbols.nupkg (legacy)'
         required: false
+        type: string
         default: 'snupkg'
       bindings-script-path:
         description: 'Path to the Generate-Bindings-DotNet.ps1 script'
@@ -67,6 +71,7 @@ on:
       helpers-path:
         description: 'Path to the Helpers.ps1 file. Defaults to Helpers.ps1 in the same directory as the script.'
         required: false
+        type: string
         default: './Helpers.ps1'
       publish-enabled:
         description: 'Publish to Nuget.org'
