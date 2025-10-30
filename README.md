@@ -22,26 +22,56 @@ Typical consumers include:
 
 ```
 /
-├─ .github/actions/
-│  ├─ binding-generate-bindings-dotnet/   # Composite action for binding generation
-│  └─ binding-generate-nugets-dotnet/     # Composite action for NuGet generation
-├─ .github/workflows/
-│  ├─ _sync-standards-reusable.yml        # Reusable GitHub Actions workflow (sync)
-│  ├─ binding-ci-simple.yml               # Reusable CI workflow for bindings
-│  └─ sync-standards.yml                  # Template workflow for consumer repos
+├─ .github/
+│  ├─ actions/
+│  │  ├─ binding-generate-bindings-dotnet/         # Composite action for binding generation
+│  │  ├─ binding-generate-nugets-dotnet/           # Composite action for NuGet generation
+│  │  └─ commit-and-push-or-pr-update/             # Composite action for commit/push/PR automation
+│  └─ workflows/
+│     ├─ _sync-standards-reusable.yml              # Reusable GitHub Actions workflow (sync)
+│     ├─ binding-common-ci.yml                     # Reusable CI workflow for bindings (common)
+│     ├─ binding-simple-cd.yml                     # Reusable CD workflow for pure .NET bindings
+│     ├─ binding-xml-cd.yml                        # Reusable CD workflow for bindings with XML
+│     └─ sync-standards.yml                        # Template workflow for consumer repos
 ├─ assets/
-│  └─ nuget-icon.png                      # Official NuGet package icon (512x512)
-├─ LICENSE                                # Canonical license file
+│  └─ nuget-icon.png                              # Official NuGet package icon (512x512)
+├─ LICENSE                                        # Canonical license file
 ├─ scripts/
 │  ├─ binding/
-│  │  └─ Generate-Bindings-DotNet.ps1     # Template for .NET binding generators
+│  │  └─ Generate-Bindings-DotNet.ps1             # Template for .NET binding generators
 │  ├─ common/
-│  │  ├─ Generate-NuGets-DotNet.ps1       # Unified NuGet generation script
-│  │  └─ Helpers.ps1                      # Shared PowerShell helpers
-│  ├─ download-sync-script.ps1            # Helper to download sync script locally
-│  └─ sync-standards.ps1                  # Synchronization script (PowerShell 7+)
-└─ sync-manifest.json                     # Manifest defining which files to sync
+│  │  ├─ Generate-NuGets-DotNet.ps1               # Unified NuGet generation script
+│  │  └─ Helpers.ps1                              # Shared PowerShell helpers
+│  ├─ download-sync-script.ps1                    # Helper to download sync script locally
+│  └─ sync-standards.ps1                          # Synchronization script (PowerShell 7+)
+├─ sync-manifest.json                             # Manifest defining which files to sync
+├─ workflows/
+│  └─ binding/
+│     ├─ template-simple-cd.yml                   # Reference template for pure .NET bindings
+│     └─ template-xml-cd.yml                      # Reference template for bindings with XML
 ```
+## Binding automation and templates
+
+This repository provides reusable workflows and composite actions to automate the build, packaging, and publication of bindings (both pure .NET and those requiring XML updates).
+
+### Key workflows
+- **binding-simple-cd.yml**: For pure .NET bindings (no XML update required).
+- **binding-xml-cd.yml**: For bindings that require downloading and comparing XML files before generating and publishing NuGets.
+- **binding-common-ci.yml**: Common CI workflow for bindings.
+
+### Composite actions
+- **binding-generate-bindings-dotnet**: Standardized binding generation.
+- **binding-generate-nugets-dotnet**: Standardized NuGet packaging.
+- **commit-and-push-or-pr-update**: Automates commit/push/PR for updated files (e.g., XML), supporting direct commit or PR creation depending on repo protection.
+
+### Reference templates
+Find ready-to-use templates in `workflows/binding/`:
+- `template-simple-cd.yml`: Example for pure .NET bindings.
+- `template-xml-cd.yml`: Example for bindings with XML update logic.
+
+### XML update automation
+Bindings that require XML updates use the composite action `commit-and-push-or-pr-update` to automatically commit the new XML file or open a PR if direct push is not allowed. This ensures the repository stays up to date with upstream XML definitions with minimal manual intervention.
+
 
 ---
 
@@ -136,30 +166,42 @@ A unified script for generating NuGet packages from .NET projects in binding rep
 
 ---
 
-## Composite actions and reusable workflows
 
-This repository provides composite GitHub Actions for standardized build and packaging steps, and reusable workflows for CI. These can be referenced from any Evergine binding repository to ensure consistent automation.
+## Example usage
 
-### Example: Using composite action for NuGet generation
+### Composite action for NuGet generation
 ```yaml
 - name: Generate NuGets (.NET)
   uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-nugets-dotnet@main
   with:
-  script-path: ./scripts/Generate-NuGets-DotNet.ps1
-  projects: path/to/project1.csproj,path/to/project2.csproj
-  version: ${{ ... }}      # O revision: ${{ ... }} según el caso
-  output-folder: nupkgs
-  build-configuration: Release
-  build-verbosity: normal
-  include-symbols: false
-  symbols-format: snupkg
+    script-path: ./scripts/Generate-NuGets-DotNet.ps1
+    projects: path/to/project1.csproj,path/to/project2.csproj
+    version: ${{ ... }}      # Or revision: ${{ ... }} as needed
+    output-folder: nupkgs
+    build-configuration: Release
+    build-verbosity: normal
+    include-symbols: false
+    symbols-format: snupkg
 ```
 
-### Example: Using reusable workflow for CI
+### Composite action for commit/push/PR automation (XML update)
+```yaml
+- name: Commit, push or PR XML update
+  uses: EvergineTeam/evergine-standards/.github/actions/commit-and-push-or-pr-update@main
+  with:
+    commit_message: "Update XML file for binding MyBinding"
+    mode: auto
+    labels: xml,standards
+    pr_branch_name: chore/update-xml-MyBinding
+    pr_title: "Update XML for MyBinding"
+    pr_body: "Automated update of XML file for binding MyBinding."
+```
+
+### Reusable workflow for CI
 ```yaml
 jobs:
   build:
-    uses: EvergineTeam/evergine-standards/.github/workflows/binding-ci-simple.yml@main
+    uses: EvergineTeam/evergine-standards/.github/workflows/binding-common-ci.yml@main
     with:
       configuration: Release
 ```
