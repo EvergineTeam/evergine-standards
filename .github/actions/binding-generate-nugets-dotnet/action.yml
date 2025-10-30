@@ -7,6 +7,10 @@ inputs:
     description: 'Path to the Generate-NuGets-DotNet.ps1 script'
     required: false
     default: './Generate-NuGets-DotNet.ps1'
+  helpers-path:
+    description: 'Path to the Helpers.ps1 file. Defaults to Helpers.ps1 in the same directory as the script.'
+    required: false
+    default: './Helpers.ps1'
   version:
     description: 'Direct version string to use for packages (e.g., "3.4.22.288-local"). Cannot be used with revision.'
     required: false
@@ -39,7 +43,6 @@ inputs:
     required: false
     default: 'snupkg'
 
-
 runs:
   using: "composite"
   steps:
@@ -60,6 +63,11 @@ runs:
           BuildConfiguration = "${{ inputs.build-configuration }}"
           IncludeSymbols = [System.Convert]::ToBoolean("${{ inputs.include-symbols }}")
           SymbolsFormat = "${{ inputs.symbols-format }}"
+        }
+        # Add helpers path if provided
+        $helpersPath = "${{ inputs.helpers-path }}"
+        if (-not [string]::IsNullOrWhiteSpace($helpersPath)) {
+          $args.HelpersPath = $helpersPath
         }
         # Add version or revision (mutually exclusive)
         $version = "${{ inputs.version }}"
