@@ -1,0 +1,85 @@
+name: XML API Binding CI (Reusable)
+
+description: >
+  Reusable workflow for bindings that require downloading and processing XML API definitions (e.g., Vulkan, OpenXR).
+
+on:
+  workflow_call:
+    inputs:
+      xml_url:
+        description: 'URL to download the XML definition file (e.g., vk.xml, xr.xml)'
+        required: true
+        type: string
+      xml_path:
+        description: 'Local path to store the XML file (e.g., vk.xml, xr.xml)'
+        required: true
+        type: string
+      xml_tmp_path:
+        description: 'Temporary path for downloaded XML (e.g., vk.xml_tmp, xr.xml_tmp)'
+        required: true
+        type: string
+      generator_script:
+        description: 'Path to the binding generation script (e.g., Generate-Bindings.ps1)'
+        required: true
+        type: string
+      generator_args:
+        description: 'Arguments for the binding generation script'
+        required: false
+        type: string
+      main_branch:
+        description: 'Main branch name (master/main)'
+        required: false
+        type: string
+        default: 'main'
+
+jobs:
+  update_and_generate:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download latest XML definition
+        uses: carlosperate/download-file-action@v1.0.3
+        with:
+          file-url: ${{ inputs.xml_url }}
+          file-name: ${{ inputs.xml_tmp_path }}
+
+      - name: Compare XML hashes
+        id: compare_hashes
+        run: |
+          echo "hash_current=$(sha256sum ${{ inputs.xml_path }} | cut -d' ' -f1)" >> $GITHUB_ENV
+          echo "hash_new=$(sha256sum ${{ inputs.xml_tmp_path }} | cut -d' ' -f1)" >> $GITHUB_ENV
+          echo "Current hash: ${{ env.hash_current }}"
+          echo "New hash: ${{ env.hash_new }}"
+
+      - name: Update XML if changed
+        if: env.hash_current != env.hash_new
+        run: |
+          mv ${{ inputs.xml_tmp_path }} ${{ inputs.xml_path }}
+          echo "XML updated."
+
+      - name: Generate bindings
+        if: env.hash_current != env.hash_new
+        shell: pwsh
+        run: |
+          pwsh ${{ inputs.generator_script }} ${{ inputs.generator_args }}
+
+      - name: Commit and push changes
+        if: env.hash_current != env.hash_new
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+          git add ${{ inputs.xml_path }}
+          git add .
+          git commit -m "Update XML and regenerate bindings"
+          git push origin ${{ inputs.main_branch }}
+
+      - name: Cleanup temp XML
+        if: always()
+        run: |
+          rm -f ${{ inputs.xml_tmp_path }}
+
+      - name: No changes detected
+        if: env.hash_current == env.hash_new
+        run: echo "No XML changes detected. Skipping binding generation."
