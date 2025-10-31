@@ -135,22 +135,23 @@ jobs:
           $xmlPath = "${{ inputs.xml-path }}"
           $xmlFile = Split-Path $xmlPath -Leaf
           $xmlDir = Split-Path $xmlPath -Parent
-          echo "xml_file=$xmlFile" >> $env:GITHUB_ENV
-          echo "xml_dir=$xmlDir" >> $env:GITHUB_ENV
-          echo "xml_file_tmp=${xmlFile}_tmp" >> $env:GITHUB_ENV
+          $xmlFileTmp = "${xmlFile}_tmp"
+          echo "xml_file=$xmlFile"    >> $env:GITHUB_OUTPUT
+          echo "xml_dir=$xmlDir"      >> $env:GITHUB_OUTPUT
+          echo "xml_file_tmp=$xmlFileTmp" >> $env:GITHUB_OUTPUT
       - name: Download latest XML definition
         uses: carlosperate/download-file-action@v1.0.3
         with:
           file-url: ${{ inputs.xml-url }}
-          file-name: ${{ env.xml_file_tmp }}
-          location: ${{ env.xml_dir }}
+          file-name: ${{ steps.xml_vars.outputs.xml_file_tmp }}
+          location: ${{ steps.xml_vars.outputs.xml_dir }}
 
       - name: Compare XML hashes
         id: compare_hashes
         shell: pwsh
         run: |
           $xmlPath = "${{ inputs.xml-path }}"
-          $xmlTmpPath = Join-Path $env:xml_dir $env:xml_file_tmp
+          $xmlTmpPath = Join-Path "${{ steps.xml_vars.outputs.xml_dir }}" "${{ steps.xml_vars.outputs.xml_file_tmp }}"
           $hash_current = if (Test-Path $xmlPath) { Get-FileHash $xmlPath -Algorithm SHA256 | Select-Object -ExpandProperty Hash } else { '' }
           $hash_new = Get-FileHash $xmlTmpPath -Algorithm SHA256 | Select-Object -ExpandProperty Hash
           $changed = $hash_current -ne $hash_new
