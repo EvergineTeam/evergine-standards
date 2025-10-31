@@ -135,6 +135,7 @@ jobs:
           $xmlPath = "${{ inputs.xml-path }}"
           $xmlFile = Split-Path $xmlPath -Leaf
           $xmlDir = Split-Path $xmlPath -Parent
+          if ([string]::IsNullOrEmpty($xmlDir)) { $xmlDir = "." }
           $xmlFileTmp = "${xmlFile}_tmp"
           echo "xml_file=$xmlFile"    >> $env:GITHUB_OUTPUT
           echo "xml_dir=$xmlDir"      >> $env:GITHUB_OUTPUT
