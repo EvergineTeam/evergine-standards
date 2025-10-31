@@ -151,11 +151,12 @@ jobs:
         id: compare_hashes
         shell: pwsh
         run: |
-          $xmlPath = "${{ inputs.xml-path }}"
+          $hash_current = "${{ hashFiles(inputs.xml-path) }}"
           $xmlTmpPath = Join-Path "${{ steps.xml_vars.outputs.xml_dir }}" "${{ steps.xml_vars.outputs.xml_file_tmp }}"
-          $hash_current = if (Test-Path $xmlPath) { Get-FileHash $xmlPath -Algorithm SHA256 | Select-Object -ExpandProperty Hash } else { '' }
-          $hash_new = Get-FileHash $xmlTmpPath -Algorithm SHA256 | Select-Object -ExpandProperty Hash
+          $hash_new = "${{ hashFiles(xmlTmpPath) }}"
           $changed = $hash_current -ne $hash_new
+          echo "xml_hash_current=$hash_current" >> $env:GITHUB_OUTPUT
+          echo "xml_hash_new=$hash_new" >> $env:GITHUB_OUTPUT
           echo "xml_changed=$changed" >> $env:GITHUB_OUTPUT
           Write-Host "Current hash: $hash_current"
           Write-Host "New hash: $hash_new"
