@@ -3,7 +3,7 @@
 # This template is for pure .NET bindings with XML update to publish NuGets to Nuget.org.
 # Copy this file to your repository as `.github/workflows/CD.yml` and customize the inputs below.
 
-name: Binding XML CD Example
+name: CD
 
 on:
   workflow_dispatch:
