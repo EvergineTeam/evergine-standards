@@ -409,8 +409,7 @@ The manifest defines which files are distributed to all repositories using schem
     "core": [
       { "src": "LICENSE", "dst": "LICENSE" },
       { "src": "assets/nuget-icon.png", "dst": "assets/nuget-icon.png" },
-      { "src": "tools/sync-standards.ps1", "dst": "tools/sync-standards.ps1" },
-      { "src": ".github/workflows/sync-standards.yml", "dst": ".github/workflows/sync-standards.yml", "overwrite": "ifMissing" }
+      { "src": "tools/sync-standards.ps1", "dst": "tools/sync-standards.ps1" }
     ],
     "binding": [
       { "src": "scripts/binding/Generate-Bindings-DotNet.ps1", "dst": "scripts/Generate-Bindings-DotNet.ps1", "overwrite": "always" },
@@ -420,9 +419,6 @@ The manifest defines which files are distributed to all repositories using schem
     "docs": [
       { "src": "templates/README.md", "dst": "README.md", "overwrite": "ifMissing" },
       { "src": "docs/contributing.md", "dst": "CONTRIBUTING.md" }
-    ],
-    "ci": [
-      { "src": ".github/workflows/build.yml", "dst": ".github/workflows/build.yml", "overwrite": "ifMissing" }
     ]
   }
 }
@@ -452,11 +448,10 @@ Each repository can define exceptions and remappings:
   "schema": "2",
   "groups": ["core", "docs"],
   "remap": {
-    ".github/workflows/sync-standards.yml": {
-      "dst": ".github/workflows/sync-standards-custom.yml",
+    "assets/nuget-icon.png": {
+      "dst": "src/Branding/nuget-icon.png",
       "overwrite": "ifMissing"
     },
-    "assets/nuget-icon.png": "src/Branding/nuget-icon.png"
   },
   "ignore": [
     "templates/*"
@@ -577,25 +572,12 @@ The groups feature allows different types of repositories to receive different s
 
 ### Use cases
 
-**Core libraries** (group: `["core", "ci"]`):
+**Core libraries** (group: `["core"]`):
 - License, NuGet icon, sync tools
-- CI workflows for building and testing
 
 **Binding repositories** (group: `["core", "binding"]`):
 - License, NuGet icon, sync tools
 - Standardized binding generation scripts
-
-**Documentation repositories** (group: `["core", "docs"]`):
-- License, basic tools
-- Documentation templates and guidelines
-
-**Tool repositories** (group: `["core", "build"]`):
-- License, sync tools
-- Build scripts and configuration
-
-**Sample projects** (group: `["core"]`):
-- License and minimal sync capability
-- No CI/CD or build infrastructure
 
 ---
 
