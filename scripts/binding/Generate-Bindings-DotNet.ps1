@@ -26,16 +26,17 @@ param (
     [string]$BuildVerbosity = "normal",         # Verbosity for dotnet build/publish (e.g., minimal, normal, detailed)
     [string]$BuildConfiguration = "Release",   # Build configuration (Release/Debug)
     [string]$GeneratorProject = "",            # Path to the generator .csproj file
-    [string]$GeneratorName = "",               # Name of the generator (used for display and executable name)
+    [string]$GeneratorName = "",               # Generator name (used for display and executable name)
     [string]$TargetFramework = "net8.0",       # Target framework for the generator (default: net8.0)
     [string]$RuntimeIdentifier = "win-x64",    # Runtime identifier for the generator (e.g., win-x64)
-    [switch]$TestMode                           # Only load functions for testing, don't execute main logic
+    [switch]$TestMode                           # Load only functions for testing, do not execute main logic
 )
 
 # Exported utility functions for unit testing
 function LogDebug($line) {
     Write-Host "##[debug] $line" -ForegroundColor Blue -BackgroundColor Black
 }
+
 function Get-BuildOutputPath {
     param(
         [string]$GeneratorDir,
@@ -49,21 +50,26 @@ function Get-BuildOutputPath {
     }
     return $buildPath
 }
+
 function Get-ProjectNameFromPath {
     param([string]$ProjectPath)
-    return [System.IO.Path]::GetFileNameWithoutExtension($ProjectPath)
+    # Normalize separators for cross-platform compatibility
+    $normalizedPath = $ProjectPath -replace '\\', '/'
+    $filename = Split-Path $normalizedPath -Leaf
+    return [System.IO.Path]::GetFileNameWithoutExtension($filename)
 }
+
 function Test-BindingParameters {
     param(
         [Parameter(Mandatory)] [hashtable]$params
     )
     if ([string]::IsNullOrWhiteSpace($params.GeneratorProject)) { return $false }
     if ([string]::IsNullOrWhiteSpace($params.GeneratorName)) { return $false }
-    # Opcional: podrías validar otros parámetros aquí
+    # Optionally: you could validate other parameters here
     return $true
 }
 
-# Si está en modo test, solo cargar funciones y salir
+# If in test mode, only load functions and exit
 if ($TestMode) {
     return
 }
