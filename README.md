@@ -184,7 +184,7 @@ A unified script for generating NuGet packages from .NET projects in binding rep
 ### Composite action for NuGet generation
 ```yaml
 - name: Generate NuGets (.NET)
-  uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-nugets-dotnet@feature/sync-bindings
+  uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-nugets-dotnet@main
   with:
     script-path: ./scripts/Generate-NuGets-DotNet.ps1
     projects: path/to/project1.csproj,path/to/project2.csproj
@@ -199,7 +199,7 @@ A unified script for generating NuGet packages from .NET projects in binding rep
 ### Composite action for commit/push/PR automation (XML update)
 ```yaml
 - name: Commit, push or PR XML update
-  uses: EvergineTeam/evergine-standards/.github/actions/commit-and-push-or-pr-update@feature/sync-bindings
+  uses: EvergineTeam/evergine-standards/.github/actions/commit-and-push-or-pr-update@main
   with:
     commit_message: "Update XML file for binding MyBinding"
     mode: auto
@@ -213,7 +213,7 @@ A unified script for generating NuGet packages from .NET projects in binding rep
 ```yaml
 jobs:
   build:
-    uses: EvergineTeam/evergine-standards/.github/workflows/binding-common-ci.yml@feature/sync-bindings
+    uses: EvergineTeam/evergine-standards/.github/workflows/binding-common-ci.yml@main
     with:
       configuration: Release
 ```
@@ -247,7 +247,7 @@ It handles the synchronization logic:
 Repositories consume it using:
 
 ```yaml
-uses: EvergineTeam/evergine-standards/.github/workflows/_sync-standards-reusable.yml@feature/sync-bindings
+uses: EvergineTeam/evergine-standards/.github/workflows/_sync-standards-reusable.yml@main
 ```
 
 > The reusable workflow executes **in the context of the target repository**, not in `evergine-standards`.
@@ -268,7 +268,7 @@ on:
 
 jobs:
   sync:
-    uses: EvergineTeam/evergine-standards/.github/workflows/_sync-standards-reusable.yml@feature/sync-bindings
+    uses: EvergineTeam/evergine-standards/.github/workflows/_sync-standards-reusable.yml@main
     with:
       org:  "EvergineTeam"
       repo: "evergine-standards"

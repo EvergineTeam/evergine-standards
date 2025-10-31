@@ -89,7 +89,7 @@ jobs:
           rm "${{ inputs.script_path }}"
 
       - name: Commit, push or PR update
-        uses: EvergineTeam/evergine-standards/.github/actions/commit-and-push-or-pr-update@feature/sync-bindings
+        uses: EvergineTeam/evergine-standards/.github/actions/commit-and-push-or-pr-update@main
         with:
           commit_message: ${{ inputs.commit_message }}
           mode: ${{ inputs.mode }}
