@@ -152,8 +152,7 @@ jobs:
         shell: pwsh
         run: |
           $hash_current = "${{ hashFiles(inputs.xml-path) }}"
-          $xmlTmpPath = Join-Path "${{ steps.xml_vars.outputs.xml_dir }}" "${{ steps.xml_vars.outputs.xml_file_tmp }}"
-          $hash_new = "${{ hashFiles(xmlTmpPath) }}"
+          $hash_new = "${{ hashFiles(format('{0}/{1}', steps.xml_vars.outputs.xml_dir, steps.xml_vars.outputs.xml_file_tmp)) }}"
           $changed = $hash_current -ne $hash_new
           echo "xml_hash_current=$hash_current" >> $env:GITHUB_OUTPUT
           echo "xml_hash_new=$hash_new" >> $env:GITHUB_OUTPUT
