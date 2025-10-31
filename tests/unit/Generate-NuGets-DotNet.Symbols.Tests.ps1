@@ -2,35 +2,40 @@
 # These tests verify that symbol packages are generated only when explicitly requested
 
 BeforeAll {
-    # Setup
-    $scriptPath = "$PSScriptRoot\..\..\scripts\common\Generate-NuGets-DotNet.ps1"
-    $tempDir = Join-Path $env:TEMP "NuGetSymbolsTests_$(Get-Date -Format 'yyyyMMdd_HHmmss')_$([Guid]::NewGuid().ToString('N').Substring(0,8))"
-    $helpersPath = "$PSScriptRoot\..\..\scripts\common\Helpers.ps1"
-    
+    # Setup multiplatform paths
+    $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\.."))
+    $scriptPath = Join-Path $repoRoot "scripts" | Join-Path -ChildPath "common" | Join-Path -ChildPath "Generate-NuGets-DotNet.ps1"
+    $helpersPath = Join-Path $repoRoot "scripts" | Join-Path -ChildPath "common" | Join-Path -ChildPath "Helpers.ps1"
+
+    # Use platform-agnostic temp dir
+    $baseTemp = $env:TEMP
+    if (-not $baseTemp) { $baseTemp = "/tmp" }
+    $tempDir = Join-Path $baseTemp "NuGetSymbolsTests_$(Get-Date -Format 'yyyyMMdd_HHmmss')_$([Guid]::NewGuid().ToString('N').Substring(0,8))"
+
     # Create test directory
     New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
-    
+
     # Create test project file
     $testProject = Join-Path $tempDir "TestProject.csproj"
     $projectContent = @"
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <PackageId>Evergine.Test.Symbols</PackageId>
-    <PackageVersion>1.0.0</PackageVersion>
-    <Authors>Evergine Team</Authors>
-    <Company>Evergine</Company>
-    <Description>Test package for symbols verification</Description>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <PackageId>Evergine.Test.Symbols</PackageId>
+        <PackageVersion>1.0.0</PackageVersion>
+        <Authors>Evergine Team</Authors>
+        <Company>Evergine</Company>
+        <Description>Test package for symbols verification</Description>
+        <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    </PropertyGroup>
 </Project>
 "@
-    Set-Content -Path $testProject -Value $projectContent
-    
+    Set-Content -Path $testProject -Value $projectContent -Encoding UTF8
+
     # Create a simple source file
     $sourceDir = Join-Path $tempDir "src"
     New-Item -ItemType Directory -Path $sourceDir -Force | Out-Null
-    Set-Content -Path (Join-Path $sourceDir "Class1.cs") -Value "namespace Test { public class Class1 { } }"
+    Set-Content -Path (Join-Path $sourceDir "Class1.cs") -Value "namespace Test { public class Class1 { } }" -Encoding UTF8
 }
 
 AfterAll {
