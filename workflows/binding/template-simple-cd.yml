@@ -12,6 +12,7 @@ on:
 
 jobs:
   cd:
+    if: github.event_name != 'schedule' || github.ref == 'refs/heads/main'
     uses: EvergineTeam/evergine-standards/.github/workflows/binding-simple-cd.yml@main
     with:
       generator-project: "YourBindingGen/YourBindingGen/YourBindingGen.csproj"  # Path to your generator .csproj

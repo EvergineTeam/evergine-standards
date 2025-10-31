@@ -11,7 +11,8 @@ on:
     - cron: '0 0 1 * *' # Monthly update on day 1 at 00:00
 
 jobs:
-  publish:
+  cd:
+    if: github.event_name != 'schedule' || github.ref == 'refs/heads/main'
     uses: EvergineTeam/evergine-standards/.github/workflows/binding-xml-cd.yml@main
     with:
       xml-url: "https://raw.githubusercontent.com/KhronosGroup/Vulkan-Docs/main/xml/vk.xml"
