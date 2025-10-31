@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <PackageId>Evergine.Test.MultiProject.Runtime</PackageId>
+    <PackageVersion>1.0.0</PackageVersion>
+    <Authors>Evergine Team</Authors>
+    <Description>Test package for multi-project scenario - Runtime</Description>
+    <PackageTags>evergine;test;runtime</PackageTags>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+  </PropertyGroup>
+</Project>

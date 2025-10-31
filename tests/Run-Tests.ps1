@@ -39,6 +39,35 @@ $TestsRoot = $PSScriptRoot
 $UnitTestsPath = Join-Path $TestsRoot "unit"
 $IntegrationTestsPath = Join-Path $TestsRoot "integration"
 
+# Function to clean up test artifacts
+function Cleanup-TestArtifacts {
+    Write-Host ""
+    Write-Host "Cleaning up test artifacts..." -ForegroundColor Cyan
+    
+    $CleanupPaths = @(
+        "$TestsRoot\fixtures\bin",
+        "$TestsRoot\fixtures\obj", 
+        "$TestsRoot\fixtures\nupkgs",
+        "$TestsRoot\..\bin",
+        "$TestsRoot\..\obj",
+        "$TestsRoot\..\nupkgs"
+    )
+    
+    foreach ($Path in $CleanupPaths) {
+        if (Test-Path $Path) {
+            try {
+                Remove-Item $Path -Recurse -Force -ErrorAction Stop
+                Write-Host "  Removed: $Path" -ForegroundColor DarkGreen
+            }
+            catch {
+                Write-Warning "  Could not remove $Path`: $($_.Exception.Message)"
+            }
+        }
+    }
+    
+    Write-Host "Cleanup completed." -ForegroundColor Green
+}
+
 # Determine which tests to run
 $TestPaths = @()
 if ($UnitOnly) {
@@ -125,6 +154,9 @@ if ($TestResults.FailedCount -gt 0) {
 if ($PassThru) {
     return $TestResults
 }
+
+# Clean up test artifacts
+Cleanup-TestArtifacts
 
 # Set exit code based on test results
 if ($TestResults.FailedCount -gt 0) {

@@ -56,7 +56,6 @@ jobs:
         uses: actions/checkout@v5
         with:
           ref: ${{ inputs.target_branch }}
-          fetch-depth: 0
 
       - name: Check for local script
         id: check_local
@@ -72,72 +71,29 @@ jobs:
       - name: Download sync script
         if: steps.check_local.outputs.use_local == 'false'
         run: |
-          curl -o "${{ inputs.script_path }}" \
+          curl -o "${{ github.workspace }}/${{ inputs.script_path }}" \
                "https://raw.githubusercontent.com/${{ inputs.org }}/${{ inputs.repo }}/${{ inputs.ref }}/scripts/sync-standards.ps1"
 
       - name: Run sync script
         shell: pwsh
         run: |
-          ${{ inputs.script_path }} `
+          ./${{ inputs.script_path }} `
             -Org "${{ inputs.org }}" `
             -Repo "${{ inputs.repo }}" `
             -Ref "${{ inputs.ref }}" `
             ${{ inputs.dry_run && '-DryRun' || '' }}
 
-      - name: Stage changes
-        if: ${{ !inputs.dry_run }}
-        shell: bash
+      - name: Remove downloaded sync script
+        if: steps.check_local.outputs.use_local == 'false'
         run: |
-          git add -A
-          if git diff --cached --quiet; then
-            echo "CHANGES=false" >> $GITHUB_ENV
-          else
-            echo "CHANGES=true" >> $GITHUB_ENV
-          fi
+          rm "${{ inputs.script_path }}"
 
-      - name: Show dry run summary
-        if: ${{ inputs.dry_run }}
-        shell: bash
-        run: |
-          echo "DRY RUN MODE - No changes will be committed or pushed"
-          echo ""
-          echo "Files that would be modified:"
-          git status --porcelain || echo "No changes detected"
-          echo ""
-          echo "To apply these changes, run the workflow again without dry_run option."
-
-      # https://github.com/actions/checkout?tab=readme-ov-file#push-a-commit-using-the-built-in-token 
-      - name: Commit (if any)
-        if: env.CHANGES == 'true' && !inputs.dry_run
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "${{ inputs.commit_message }}"
-
-      # Direct push if there are changes and mode is auto
-      - name: Try direct push
-        if: env.CHANGES == 'true' && inputs.mode == 'auto' && github.event.repository.fork != true && !inputs.dry_run
-        id: direct
-        continue-on-error: true
-        run: |
-          git push
-          echo "exit_code=$?" >> $GITHUB_OUTPUT
-
-      # If push fails (e.g. protected branch) or if forced mode=pr → open PR
-      - name: Create Pull Request
-        if: >
-          env.CHANGES == 'true' && !inputs.dry_run && (
-            inputs.mode == 'pr' ||
-            github.event.repository.fork == true ||
-            steps.direct.outcome == 'failure' ||
-            steps.direct.outputs.exit_code != '' && steps.direct.outputs.exit_code != '0'
-          )
-        uses: peter-evans/create-pull-request@v7
+      - name: Commit, push or PR update
+        uses: EvergineTeam/evergine-standards/.github/actions/commit-and-push-or-pr-update@main
         with:
-          branch: chore/sync-standards
-          title: "Sync standards"
-          body: "Automated update of shared standard files."
-          commit-message: "${{ inputs.commit_message }}"
+          commit_message: ${{ inputs.commit_message }}
+          mode: ${{ inputs.mode }}
           labels: standards
-          signoff: false
-          delete-branch: true
+          pr_branch_name: chore/sync-standards
+          pr_title: Sync standards
+          pr_body: Automated update of shared standard files.

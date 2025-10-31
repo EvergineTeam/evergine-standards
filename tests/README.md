@@ -1,44 +1,78 @@
-# Testing Guide for sync-standards.ps1
+# Testing Guide for Evergine Standards
 
-This directory contains a comprehensive test suite for the `sync-standards.ps1` script using **Pester 5.7.1+**.
+This directory contains a comprehensive test suite for the Evergine standards unification project using **Pester 5.7.1+**.
+
+## Project Overview
+
+This project unifies scripts and workflows across multiple Evergine binding repositories, providing:
+- **Synchronized script templates** for binding generation and NuGet packaging
+- **Centralized standards** managed via `sync-standards.ps1`
+- **Automated testing** for all components
+- **CI/CD compatibility** with cleanup automation
 
 ## Requirements
 
 - **PowerShell 5.1+** or **PowerShell Core 7+**
 - **Pester 5.7.1+** (automatically installed if not available)
+- **.NET 8.0** for NuGet packaging tests
 
 ## Test Structure
 
 ```
 tests/
-├── unit/                           # Unit tests
-│   └── SyncStandards.Tests.ps1    # Individual function tests
-├── integration/                    # Integration tests  
-│   └── SyncStandards.Integration.Tests.ps1  # End-to-end tests
-├── fixtures/                      # Test data
-│   ├── manifest-basic.json        # Basic manifest
-│   ├── manifest-with-overwrite.json  # Manifest with overwrite policies
-│   ├── override-basic.json        # Example override file
-│   └── mock-repo/                 # Simulated repository
-├── Run-Tests.ps1                  # Main test execution script
-└── README.md                      # This documentation
+├── fixtures/                                 # Test data and mock projects
+│   ├── *.csproj                             # Real .NET project files for testing
+│   ├── *.json                               # Manifest and override files
+│   └── mock-repo/                           # Simulated repository
+├── integration/                               # Integration tests  
+│   └── SyncStandards.Integration.Tests.ps1   # End-to-end sync tests
+├── unit/                                       # Unit tests
+│   ├── Generate-Bindings-DotNet.Tests.ps1    # Binding generation script
+│   ├── Generate-NuGets-DotNet.*.Tests.ps1    # Specialized NuGet tests
+│   ├── Generate-NuGets-DotNet.Tests.ps1      # NuGet packaging script
+│   ├── Helpers.Tests.ps1                     # Shared helper functions
+│   └── SyncStandards.Tests.ps1               # Sync standards functionality
+├── README.md                                # This documentation
+└── Run-Tests.ps1                             # Main test execution script
 ```
+
+## Scripts Under Test
+
+### 1. **Sync Standards** (`scripts/sync-standards.ps1`)
+Synchronizes files across Evergine repositories based on manifest configuration.
+
+### 2. **Binding Generation** (`scripts/binding/Generate-Bindings-DotNet.ps1`)
+Parameterized template for generating .NET bindings across different repositories.
+
+### 3. **NuGet Packaging** (`scripts/common/Generate-NuGets-DotNet.ps1`)
+Unified script for generating NuGet packages supporting both:
+- **Binding style**: Date-based versions with revision numbers
+- **Add-on style**: Direct version specification
+
+### 4. **Shared Helpers** (`scripts/common/Helpers.ps1`)
+Common utilities for logging, variable display, and file operations.
+
+## Requirements
+
+- **PowerShell 5.1+** or **PowerShell Core 7+**
+- **Pester 5.7.1+** (automatically installed if not available)
+- **.NET 8.0** for NuGet packaging tests
 
 ## Running Tests
 
 ### Main Test Script (Recommended)
 ```powershell
-# Run all tests
+# Run all tests (sync + binding scripts)
 .\tests\Run-Tests.ps1
 
-# Only unit tests
+# Only unit tests (98 tests)
 .\tests\Run-Tests.ps1 -UnitOnly
 
 # Only integration tests
 .\tests\Run-Tests.ps1 -IntegrationOnly
 
 # Filter tests by name pattern
-.\tests\Run-Tests.ps1 -TestName "Get-RawUrl"
+.\tests\Run-Tests.ps1 -TestName "Generate-NuGets"
 
 # Generate XML report
 .\tests\Run-Tests.ps1 -OutputFile "test-results.xml" -OutputFormat "NUnitXml"
@@ -47,36 +81,73 @@ tests/
 $Results = .\tests\Run-Tests.ps1 -PassThru
 ```
 
-### Direct Pester Execution
+### Individual Test Files
 ```powershell
-# Install Pester if not available
-Install-Module -Name Pester -Force -SkipPublisherCheck
-
-# Run specific test files
+# Test sync standards functionality
 Invoke-Pester .\tests\unit\SyncStandards.Tests.ps1
+
+# Test binding generation script
+Invoke-Pester .\tests\unit\Generate-Bindings-DotNet.Tests.ps1
+
+# Test NuGet packaging script (comprehensive)
+Invoke-Pester .\tests\unit\Generate-NuGets-DotNet.Tests.ps1
+
+# Test shared helper functions
+Invoke-Pester .\tests\unit\Helpers.Tests.ps1
+
+# Integration tests
 Invoke-Pester .\tests\integration\SyncStandards.Integration.Tests.ps1
 ```
 
+### Automatic Cleanup
+All tests include automatic cleanup of build artifacts:
+- `bin/` folders from compilation
+- `obj/` folders from build cache  
+- `nupkgs/` folders from package generation
+
+Cleanup occurs both **per test file** (AfterAll) and **globally** (Run-Tests.ps1).
+
 ## Test Coverage
 
-### Unit Tests
+### Sync Standards Tests (24 tests)
 - **Get-RawUrl**: GitHub URL generation with explicit parameters
 - **Resolve-Dst**: Destination remapping logic  
 - **Is-Ignored**: File filtering by glob patterns
+- **Integration scenarios**: Local sync, dry-run, overrides, schema validation
 
-### Integration Tests  
-- **Local synchronization**: Copy from local repository
-- **Dry-run mode**: Verification without modifications
-- **Override files**: Application of remap and ignore rules
-- **Overwrite policies**: `always` vs `ifMissing`
-- **Error handling**: Invalid manifests, missing files
-- **Directory creation**: Nested folder structures
-- **Schema validation**: Compatibility between manifest and override
+### Binding Generation Tests (16 tests)
+- **Parameter validation**: Required parameters and combinations
+- **Command generation**: dotnet run with proper arguments
+- **Path handling**: Relative and absolute project paths
+- **Error conditions**: Missing files, invalid parameters
+- **Integration scenarios**: Real-world parameter combinations
+
+### NuGet Packaging Tests (23 tests)
+- **Version calculation**: Date-based vs direct version modes
+- **Project handling**: Single and multiple project scenarios
+- **Parameter validation**: Required parameters and error cases
+- **File operations**: Project file validation and output folder creation
+- **Helpers integration**: LogDebug and ShowVariables function calls
+
+### NuGet Specialized Tests (35 tests)
+- **MultiProject.Tests**: Complex scenarios with multiple .csproj files
+- **Simple.Tests**: Basic single-project packaging
+- **VersionValidation.Tests**: Comprehensive NuGet semantic versioning validation
+
+### Helper Functions Tests (23 tests)
+- **LogDebug**: CI/CD compatible logging with ##[debug] prefix
+- **ShowVariables**: Hashtable display in both modern and legacy formats
+- **CreateOutputFolder**: Directory creation with error handling
+
+### Integration Tests (8 tests)
+- **End-to-end sync**: Complete workflow testing
+- **Override handling**: Complex remap and ignore scenarios
+- **Error handling**: Comprehensive failure mode testing
 
 ## Testing Approach
 
-### TestMode Integration
-The script includes a `-TestMode` parameter that allows loading functions without executing the main logic:
+### TestMode Integration (Sync Standards)
+The sync-standards script includes a `-TestMode` parameter for loading functions without execution:
 
 ```powershell
 # Load functions for testing without execution
@@ -86,43 +157,70 @@ The script includes a `-TestMode` parameter that allows loading functions withou
 $url = Get-RawUrl -path "test.txt" -Org "TestOrg" -Repo "TestRepo" -Ref "main"
 ```
 
+### Real Project Testing (Binding Scripts)
+Binding and NuGet scripts are tested with real .csproj files in `tests/fixtures/`:
+- `SingleProject.csproj`: Basic single-project scenario
+- `BindingProject.csproj`: Binding-specific project structure
+- `MultiProject.Runtime.csproj` & `MultiProject.Editor.csproj`: Multi-project scenarios
+
+### Mock Strategy
+- **Minimal mocking**: Use real functions where possible
+- **Strategic mocks**: Mock external dependencies (dotnet, file system)
+- **Path filtering**: Mock Test-Path to allow Helpers.ps1 but reject test projects
+
 This approach ensures:
-- **No code duplication** between script and tests
-- **Real function testing** instead of mocking
+- **No code duplication** between scripts and tests
+- **Real function testing** instead of excessive mocking
 - **Automatic synchronization** with script changes
 - **Maintainable test suite** with single source of truth
 
 ## Test Scenarios
 
-### Successful Scenarios
-- Basic file synchronization
-- Remapping rule application
-- Ignore files by glob patterns
-- Different overwrite policies
-- Automatic directory creation
-- Dry-run mode validation
+### Sync Standards Scenarios
+- Basic file synchronization with schema v2 groups
+- Remapping rule application and destination resolution
+- Ignore files by glob patterns and override handling
+- Different overwrite policies (`always` vs `ifMissing`)
+- Automatic directory creation and dry-run validation
+- Error handling for malformed manifests and missing files
 
-### Error Handling
+### Binding Generation Scenarios  
+- Parameter validation and command generation
+- Project path resolution (relative/absolute)
+- Error conditions (missing projects, invalid combinations)
+- Real-world parameter combinations with sample binding projects
+
+### NuGet Packaging Scenarios
+- **Version modes**: Date-based (`2025.10.28.123`) vs direct (`1.0.0-alpha`)
+- **Project types**: Single project vs multi-project packaging
+- **Parameter validation**: Empty projects arrays, missing required parameters
+- **File operations**: Project existence validation and output folder creation
+- **Error handling**: Invalid version formats, missing Helpers.ps1
+- **Version validation**: NuGet semantic versioning compliance
+
+### Error Handling Coverage
 - Missing or malformed JSON manifests
-- Source files not found
+- Source files not found / invalid project paths
 - Schema version incompatibility
-- Write permission issues
-- Empty or corrupted files
-
-### Override Configurations
-- Simple remap (string format)
-- Advanced remap (object with dst and overwrite)
-- Combined remap by src and dst
-- Multiple ignore patterns
-- Schema validation
+- Write permission issues and folder creation failures
+- Interactive parameter prompts (resolved for CI/CD compatibility)
+- Invalid NuGet version formats preventing dotnet pack failures
 
 ## Adding New Tests
 
-### For Unit Tests
+### For Sync Standards
 1. Edit `tests/unit/SyncStandards.Tests.ps1`
 2. Add new `Describe` or `Context` blocks
 3. Use dot sourcing with `-TestMode` to load real functions
 4. Test functions with explicit parameters
+
+### For Binding Scripts
+1. Choose appropriate test file:
+   - `Generate-Bindings-DotNet.Tests.ps1` for binding generation
+   - `Generate-NuGets-DotNet.Tests.ps1` for NuGet packaging
+   - `Helpers.Tests.ps1` for shared utilities
+2. Add test scenarios with proper mocking strategy
+3. Use existing fixtures or create new .csproj files in `tests/fixtures/`
 
 ### For Integration Tests
 1. Edit `tests/integration/SyncStandards.Integration.Tests.ps1`
@@ -130,12 +228,13 @@ This approach ensures:
 3. Use temporary workspaces to avoid side effects
 
 ### Best Practices
-- **Isolation**: Each test should be independent
-- **Cleanup**: Clean temporary files in `finally` blocks  
+- **Isolation**: Each test should be independent with proper cleanup
 - **Descriptive names**: Tests that explain what they verify
-- **Reusable fixtures**: Keep test data organized
-- **Complete coverage**: Include happy path and edge cases
-- **Real function testing**: Use `-TestMode` instead of duplicating code
+- **Mock strategy**: Mock external dependencies, test real logic
+- **Fixture reuse**: Use existing .csproj files where possible
+- **Error scenarios**: Include both happy path and edge cases
+- **Version validation**: Test NuGet semantic versioning edge cases
+- **CI/CD compatibility**: Avoid interactive prompts in parameter validation
 
 ## CI/CD Integration
 
@@ -198,50 +297,3 @@ with:
 # Simulate CI environment locally
 .\tests\Run-Tests.ps1 -OutputFile "test-results.xml" -OutputFormat "NUnitXml"
 ```
-
-## Troubleshooting
-
-### Error: "Pester module not found" or incompatible version
-```powershell
-# Scripts automatically install Pester 5.7.1+, but if issues persist:
-Install-Module -Name Pester -Force -SkipPublisherCheck -Scope CurrentUser -AllowClobber
-Remove-Module Pester -Force
-Import-Module Pester -RequiredVersion 5.7.1 -Force
-```
-
-### Error: "Execution policy restricted"
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-```
-
-### Tests fail due to permissions
-- Verify write permissions in temporary directories
-- Run PowerShell as administrator if necessary
-
-### TestMode not working
-- Ensure the script has the `-TestMode` parameter
-- Verify functions are defined outside the `if (-not $TestMode)` block
-- Check dot sourcing syntax: `. .\scripts\sync-standards.ps1 -TestMode`
-
-### Mock repo not found
-- Verify that `tests/fixtures/mock-repo/` exists
-- Regenerate fixtures by running initial setup
-
-## Test Metrics
-
-Run with reporting to get detailed metrics:
-```powershell
-$Results = .\tests\Run-Tests.ps1 -PassThru
-Write-Host "Coverage: $($Results.PassedCount)/$($Results.TotalCount) tests passed"
-Write-Host "Duration: $($Results.Duration)"
-```
-
-## Architecture Benefits
-
-The current testing architecture provides:
-
-1. **No Code Duplication**: Tests use real script functions via `-TestMode`
-2. **Automatic Synchronization**: Changes in the main script automatically reflect in tests
-3. **Modular CI/CD**: Reusable workflow templates for different scenarios
-4. **Comprehensive Coverage**: tests covering unit and integration scenarios
-5. **Easy Maintenance**: Single source of truth for function logic

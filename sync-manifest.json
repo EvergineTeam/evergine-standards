@@ -12,11 +12,23 @@
             {
                 "src": "assets/nuget-icon.png",
                 "dst": "assets/nuget-icon.png"
+            }
+        ],
+        "binding": [
+            {
+                "src": "scripts/binding/Generate-Bindings-DotNet.ps1",
+                "dst": "build/scripts/Generate-Bindings-DotNet.ps1",
+                "overwrite": "always"
             },
             {
-                "src": ".github/workflows/sync-standards.yml",
-                "dst": ".github/workflows/sync-standards.yml",
-                "overwrite": "ifMissing"
+                "src": "scripts/common/Generate-NuGets-DotNet.ps1",
+                "dst": "build/scripts/Generate-NuGets-DotNet.ps1",
+                "overwrite": "always"
+            },
+            {
+                "src": "scripts/common/Helpers.ps1",
+                "dst": "build/scripts/Helpers.ps1",
+                "overwrite": "always"
             }
         ]
     }
