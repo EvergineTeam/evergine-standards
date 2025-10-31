@@ -150,7 +150,7 @@ jobs:
         shell: pwsh
         run: |
           $xmlPath = "${{ inputs.xml-path }}"
-          $xmlTmpPath = Join-Path "$env.xml_dir" "$env.xml_file_tmp"
+          $xmlTmpPath = Join-Path $env:xml_dir $env:xml_file_tmp
           $hash_current = if (Test-Path $xmlPath) { Get-FileHash $xmlPath -Algorithm SHA256 | Select-Object -ExpandProperty Hash } else { '' }
           $hash_new = Get-FileHash $xmlTmpPath -Algorithm SHA256 | Select-Object -ExpandProperty Hash
           $changed = $hash_current -ne $hash_new
