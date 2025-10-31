@@ -23,29 +23,57 @@
 #>
 
 param (
-    [string]$BuildVerbosity = "normal",
-    [string]$BuildConfiguration = "Release",
-    [string]$GeneratorProject = "",
-    [string]$GeneratorName = "",
-    [string]$TargetFramework = "net8.0",
-    [string]$RuntimeIdentifier = "win-x64"
+    [string]$BuildVerbosity = "normal",         # Verbosity for dotnet build/publish (e.g., minimal, normal, detailed)
+    [string]$BuildConfiguration = "Release",   # Build configuration (Release/Debug)
+    [string]$GeneratorProject = "",            # Path to the generator .csproj file
+    [string]$GeneratorName = "",               # Name of the generator (used for display and executable name)
+    [string]$TargetFramework = "net8.0",       # Target framework for the generator (default: net8.0)
+    [string]$RuntimeIdentifier = "win-x64",    # Runtime identifier for the generator (e.g., win-x64)
+    [switch]$TestMode                           # Only load functions for testing, don't execute main logic
 )
 
-# Validate required parameters
-if ([string]::IsNullOrWhiteSpace($GeneratorProject)) {
-    Write-Host "ERROR: GeneratorProject parameter is required" -ForegroundColor Red
-    exit 1
-}
-
-if ([string]::IsNullOrWhiteSpace($GeneratorName)) {
-    Write-Host "ERROR: GeneratorName parameter is required" -ForegroundColor Red
-    exit 1
-}
-
-# Utility functions
+# Exported utility functions for unit testing
 function LogDebug($line) {
     Write-Host "##[debug] $line" -ForegroundColor Blue -BackgroundColor Black
 }
+function Get-BuildOutputPath {
+    param(
+        [string]$GeneratorDir,
+        [string]$BuildConfiguration,
+        [string]$TargetFramework,
+        [string]$RuntimeIdentifier
+    )
+    $buildPath = "$GeneratorDir\bin\$BuildConfiguration\$TargetFramework"
+    if (-not [string]::IsNullOrWhiteSpace($RuntimeIdentifier)) {
+        $buildPath += "\$RuntimeIdentifier"
+    }
+    return $buildPath
+}
+function Get-ProjectNameFromPath {
+    param([string]$ProjectPath)
+    return [System.IO.Path]::GetFileNameWithoutExtension($ProjectPath)
+}
+function Test-BindingParameters {
+    param(
+        [Parameter(Mandatory)] [hashtable]$params
+    )
+    if ([string]::IsNullOrWhiteSpace($params.GeneratorProject)) { return $false }
+    if ([string]::IsNullOrWhiteSpace($params.GeneratorName)) { return $false }
+    # Opcional: podrías validar otros parámetros aquí
+    return $true
+}
+
+# Si está en modo test, solo cargar funciones y salir
+if ($TestMode) {
+    return
+}
+
+# Validate required parameters
+if (-not (Test-BindingParameters @{ GeneratorProject = $GeneratorProject; GeneratorName = $GeneratorName })) {
+    Write-Host "ERROR: GeneratorProject and GeneratorName parameters are required" -ForegroundColor Red
+    exit 1
+}
+
 
 # Show variables
 LogDebug "############## VARIABLES ##############"
@@ -78,13 +106,8 @@ else {
 LogDebug "START $GeneratorName binding generator process"
 
 $generatorDir = Split-Path $GeneratorProject -Parent
-$projectName = [System.IO.Path]::GetFileNameWithoutExtension($GeneratorProject)
-
-# Build path based on whether RuntimeIdentifier is specified
-$buildPath = "$generatorDir\bin\$BuildConfiguration\$TargetFramework"
-if (-not [string]::IsNullOrWhiteSpace($RuntimeIdentifier)) {
-    $buildPath += "\$RuntimeIdentifier"
-}
+$projectName = Get-ProjectNameFromPath $GeneratorProject
+$buildPath = Get-BuildOutputPath $generatorDir $BuildConfiguration $TargetFramework $RuntimeIdentifier
 
 Push-Location $buildPath
 try {
