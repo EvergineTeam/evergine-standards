@@ -156,7 +156,7 @@ jobs:
           $hash_current = if (Test-Path $xmlPath) { Get-FileHash $xmlPath -Algorithm SHA256 | Select-Object -ExpandProperty Hash } else { '' }
           $hash_new = Get-FileHash $xmlTmpPath -Algorithm SHA256 | Select-Object -ExpandProperty Hash
           $changed = $hash_current -ne $hash_new
-          echo "xml_changed=$changed" >> $GITHUB_OUTPUT
+          echo "xml_changed=$changed" >> $env:GITHUB_OUTPUT
           Write-Host "Current hash: $hash_current"
           Write-Host "New hash: $hash_new"
           Write-Host "XML changed: $changed"
