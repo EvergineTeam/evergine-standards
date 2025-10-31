@@ -140,6 +140,7 @@ jobs:
           echo "xml_file=$xmlFile"    >> $env:GITHUB_OUTPUT
           echo "xml_dir=$xmlDir"      >> $env:GITHUB_OUTPUT
           echo "xml_file_tmp=$xmlFileTmp" >> $env:GITHUB_OUTPUT
+          
       - name: Download latest XML definition
         uses: carlosperate/download-file-action@v1.0.3
         with:
@@ -147,30 +148,17 @@ jobs:
           file-name: ${{ steps.xml_vars.outputs.xml_file_tmp }}
           location: ${{ steps.xml_vars.outputs.xml_dir }}
 
-      - name: Debug XML files
+      - name: Normalize downloaded XML to CRLF
         shell: pwsh
         run: |
-          $files = @("${{ inputs.xml-path }}", "${{ steps.xml_vars.outputs.xml_dir }}/${{ steps.xml_vars.outputs.xml_file_tmp }}")
-          foreach ($file in $files) {
-            Write-Host "File: $file"
-            if (Test-Path $file) {
-              $size = (Get-Item $file).Length
-              Write-Host "  Size: $size bytes"
-              $encoding = [System.Text.Encoding]::Default
-              try {
-                $stream = [System.IO.StreamReader]::new($file)
-                $encoding = $stream.CurrentEncoding
-                $stream.Close()
-              } catch {}
-              Write-Host "  Encoding: $($encoding.EncodingName)"
-              $bytes = [System.IO.File]::ReadAllBytes($file)
-              $firstBytes = $bytes[0..([Math]::Min(15, $bytes.Length-1))]
-              $lastBytes = $bytes[([Math]::Max(0, $bytes.Length-16))..($bytes.Length-1)]
-              Write-Host "  First bytes: $(($firstBytes | ForEach-Object { $_.ToString('X2') }) -join ' ')"
-              Write-Host "  Last bytes: $(($lastBytes | ForEach-Object { $_.ToString('X2') }) -join ' ')"
-            } else {
-              Write-Host "  File not found."
-            }
+          $xmlTmpPath = Join-Path "${{ steps.xml_vars.outputs.xml_dir }}" "${{ steps.xml_vars.outputs.xml_file_tmp }}"
+          if (Test-Path $xmlTmpPath) {
+            $content = Get-Content $xmlTmpPath -Raw
+            $content = $content -replace "(?<!\r)\n", "`r`n"
+            Set-Content $xmlTmpPath -Value $content -NoNewline
+            Write-Host "Normalized $xmlTmpPath to CRLF."
+          } else {
+            Write-Host "File not found: $xmlTmpPath"
           }
 
       - name: Compare XML hashes
