@@ -33,6 +33,11 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Restore .NET workloads for generator
+      shell: pwsh
+      run: |
+        dotnet workload restore "${{ inputs.generator-project }}"
+        
     - name: Generate Bindings
       shell: pwsh
       run: |

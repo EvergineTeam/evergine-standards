@@ -46,6 +46,17 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Restore .NET workloads for projects
+      shell: pwsh
+      run: |
+        $projects = "${{ inputs.projects }}" -split '[,\n]'
+        foreach ($proj in $projects) {
+          $projPath = $proj.Trim()
+          if ($projPath) {
+            dotnet workload restore "$projPath"
+          }
+        }
+
     - name: Generate NuGet Packages
       id: generate
       shell: pwsh
