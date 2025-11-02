@@ -105,6 +105,12 @@ jobs:
           runtime-identifier: ${{ inputs.runtime-identifier }}
           build-verbosity: ${{ inputs.build-verbosity }}
           build-configuration: ${{ inputs.build-configuration }}
+      
+      - name: Restore .NET workloads for binding project
+        if: inputs.nuget-artifacts == false
+        shell: pwsh
+        run: |
+          dotnet workload restore "${{ inputs.binding-project }}"
 
       - name: Build binding project
         if: inputs.nuget-artifacts == false
