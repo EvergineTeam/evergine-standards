@@ -26,6 +26,7 @@ jobs:
       nuget-projects: |                                           # NuGet projects (one per line)
         Source/YourAddon/YourAddon.csproj
         Source/YourAddon.Editor/YourAddon.Editor.csproj
+      version-suffix: "rolling"                                   # Add preview suffix to packages
       build-configuration: "Release"                              # Build configuration (Release, Debug, etc.)
       dotnet-version: "8.0.x"                                     # .NET version to use
       upload-artifacts: ${{ inputs.publish-artifacts }}           # Upload packages as workflow artifacts
