@@ -43,7 +43,7 @@ jobs:
       dotnet-version: "8.0.x"                                        # .NET version
       storage-account-name: "everginestudio"                   # Azure Storage account
       storage-container-name: "pkg-nightly"                              # Azure Storage container
-      publish-packages: ${{ true && !inputs.skip-assets-publishing }}           # Publish only if skip-upload is false
+      publish-packages: ${{ !inputs.skip-assets-publishing }}           # Publish only if skip-upload is false
       enable-email-notifications: true                               # Send email on failure
     secrets:
       NUGET_UPLOAD_TOKEN: ${{ secrets.NUGET_UPLOAD_TOKEN }}          # NuGet.org API key
