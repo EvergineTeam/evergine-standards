@@ -292,7 +292,7 @@ The script supports **dependency projects** that need to be built first (to reso
 ### Composite action for add-on asset generation
 ```yaml
 - name: Generate add-on assets
-  uses: EvergineTeam/evergine-standards/.github/actions/addon-generate-assets@main
+  uses: EvergineTeam/evergine-standards/.github/actions/addon-generate-assets@v2
   with:
     script-path: ./scripts/Generate-Assets-AddOn.ps1
     assets-project: YourAddon.Assets/YourAddon.Assets.csproj
@@ -307,7 +307,7 @@ The script supports **dependency projects** that need to be built first (to reso
 ### Composite action for NuGet generation
 ```yaml
 - name: Generate NuGets (.NET)
-  uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-nugets-dotnet@main
+  uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-nugets-dotnet@v2
   with:
     script-path: ./scripts/Generate-NuGets-DotNet.ps1
     projects: path/to/project1.csproj,path/to/project2.csproj
@@ -324,7 +324,7 @@ The script supports **dependency projects** that need to be built first (to reso
 ```yaml
 - name: Send failure notification
   if: ${{ failure() }}
-  uses: EvergineTeam/evergine-standards/.github/actions/send-notification-email@main
+  uses: EvergineTeam/evergine-standards/.github/actions/send-notification-email@v2
   with:
     sendgrid-token: ${{ secrets.WAVE_SENDGRID_TOKEN }}
     from-email: ${{ secrets.EVERGINE_EMAIL }}
@@ -337,7 +337,7 @@ The script supports **dependency projects** that need to be built first (to reso
 ### Composite action for commit/push/PR automation (XML update)
 ```yaml
 - name: Commit, push or PR XML update
-  uses: EvergineTeam/evergine-standards/.github/actions/commit-and-push-or-pr-update@main
+  uses: EvergineTeam/evergine-standards/.github/actions/commit-and-push-or-pr-update@v2
   with:
     commit_message: "Update XML file for binding MyBinding"
     mode: auto
@@ -351,7 +351,7 @@ The script supports **dependency projects** that need to be built first (to reso
 ```yaml
 jobs:
   build:
-    uses: EvergineTeam/evergine-standards/.github/workflows/addon-common-ci.yml@main
+    uses: EvergineTeam/evergine-standards/.github/workflows/addon-common-ci.yml@v2
     with:
       configuration: Release
 ```
@@ -360,7 +360,7 @@ jobs:
 ```yaml
 jobs:
   build:
-    uses: EvergineTeam/evergine-standards/.github/workflows/binding-common-ci.yml@main
+    uses: EvergineTeam/evergine-standards/.github/workflows/binding-common-ci.yml@v2
     with:
       configuration: Release
 ```
@@ -394,7 +394,7 @@ It handles the synchronization logic:
 Repositories consume it using:
 
 ```yaml
-uses: EvergineTeam/evergine-standards/.github/workflows/_sync-standards-reusable.yml@main
+uses: EvergineTeam/evergine-standards/.github/workflows/_sync-standards-reusable.yml@v2
 ```
 
 > The reusable workflow executes **in the context of the target repository**, not in `evergine-standards`.
@@ -415,7 +415,7 @@ on:
 
 jobs:
   sync:
-    uses: EvergineTeam/evergine-standards/.github/workflows/_sync-standards-reusable.yml@main
+    uses: EvergineTeam/evergine-standards/.github/workflows/_sync-standards-reusable.yml@v2
     with:
       org:  "EvergineTeam"
       repo: "evergine-standards"

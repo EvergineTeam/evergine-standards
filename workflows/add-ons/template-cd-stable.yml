@@ -17,7 +17,7 @@ on:
 jobs:
   cd:
     if: github.event_name != 'schedule' || github.ref == 'refs/heads/main'
-    uses: EvergineTeam/evergine-standards/.github/workflows/addon-simple-cd.yml@main
+    uses: EvergineTeam/evergine-standards/.github/workflows/addon-simple-cd.yml@v2
     with:
       assets-project: "YourAddon.Assets/YourAddon.Assets.csproj"      # Path to your assets .csproj
       nuget-projects: |                                               # Optional: NuGet projects (one per line)

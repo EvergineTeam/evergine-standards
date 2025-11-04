@@ -211,7 +211,7 @@ jobs:
           location: ${{ env.xml_dir }}
 
       - name: Commit, push or PR XML update
-        uses: EvergineTeam/evergine-standards/.github/actions/commit-and-push-or-pr-update@main
+        uses: EvergineTeam/evergine-standards/.github/actions/commit-and-push-or-pr-update@v2
         with:
           commit_message: "Update XML file for binding ${{ inputs.generator-name }}"
           mode: auto
@@ -231,7 +231,7 @@ jobs:
           nuget-version: ${{ inputs.nuget-version }}
 
       - name: Generate bindings
-        uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-bindings-dotnet@main
+        uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-bindings-dotnet@v2
         with:
           script-path: ${{ inputs.bindings-script-path }}
           generator-project: ${{ inputs.generator-project }}
@@ -243,7 +243,7 @@ jobs:
           restore-workloads: ${{ inputs.restore-workloads }}
 
       - name: Generate NuGets
-        uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-nugets-dotnet@main
+        uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-nugets-dotnet@v2
         with:
           script-path: ${{ inputs.nugets-script-path }}
           helpers-path: ${{ inputs.helpers-path }}
@@ -273,7 +273,7 @@ jobs:
 
       - name: Send failure notification
         if: ${{ failure() && inputs.enable-email-notifications == true }}
-        uses: EvergineTeam/evergine-standards/.github/actions/send-notification-email@main
+        uses: EvergineTeam/evergine-standards/.github/actions/send-notification-email@v2
         with:
           sendgrid-token: ${{ secrets.WAVE_SENDGRID_TOKEN }}
           from-email: ${{ secrets.EVERGINE_EMAIL }}

@@ -24,14 +24,14 @@ on:
 jobs:
   # Check if there are changes since last successful nightly run
   check_changes:
-    uses: EvergineTeam/evergine-standards/.github/workflows/_check-changes-since-last-run.yml@main
+    uses: EvergineTeam/evergine-standards/.github/workflows/_check-changes-since-last-run.yml@v2
     with:
       workflow-filename: "cd-nightly.yml" # Filename of this workflow, it's case-sensitive
 
   cd:
     needs: check_changes
     if: ${{ needs.check_changes.outputs.has_changes == 'true' || inputs.force-execution == true }}
-    uses: EvergineTeam/evergine-standards/.github/workflows/addon-simple-cd.yml@main
+    uses: EvergineTeam/evergine-standards/.github/workflows/addon-simple-cd.yml@v2
     with:
       assets-project: "YourAddon.Assets/YourAddon.Assets.csproj"      # Path to your assets .csproj
       nuget-projects: |                                               # NuGet projects (one per line)
