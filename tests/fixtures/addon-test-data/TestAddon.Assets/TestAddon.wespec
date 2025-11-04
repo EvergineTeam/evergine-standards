@@ -1,0 +1,8 @@
+Authors: Evergine
+Owners: Evergine
+Description: Test package.
+Tags:
+- Evergine
+Nugets:
+- Evergine.TestAddon 2025.0.0.0-preview
+

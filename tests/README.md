@@ -25,12 +25,18 @@ tests/
 │   ├── *.json                               # Manifest and override files
 │   └── mock-repo/                           # Simulated repository
 ├── integration/                               # Integration tests  
+│   ├── ActionsVersionSuffix.Integration.Tests.ps1  # GitHub Actions version tests
 │   └── SyncStandards.Integration.Tests.ps1   # End-to-end sync tests
 ├── unit/                                       # Unit tests
+│   ├── Generate-Assets-AddOn.Tests.ps1       # Add-on asset generation script
 │   ├── Generate-Bindings-DotNet.Tests.ps1    # Binding generation script
-│   ├── Generate-NuGets-DotNet.*.Tests.ps1    # Specialized NuGet tests
+│   ├── Generate-NuGets-DotNet.MultiProject.Tests.ps1  # Multi-project NuGet tests
+│   ├── Generate-NuGets-DotNet.Simple.Tests.ps1        # Simple NuGet tests
+│   ├── Generate-NuGets-DotNet.Symbols.Tests.ps1       # Symbol package tests
 │   ├── Generate-NuGets-DotNet.Tests.ps1      # NuGet packaging script
+│   ├── Generate-NuGets-DotNet.VersionValidation.Tests.ps1  # Version validation tests
 │   ├── Helpers.Tests.ps1                     # Shared helper functions
+│   ├── mock-repo/                            # Mock repository for unit tests
 │   └── SyncStandards.Tests.ps1               # Sync standards functionality
 ├── README.md                                # This documentation
 └── Run-Tests.ps1                             # Main test execution script
@@ -38,18 +44,21 @@ tests/
 
 ## Scripts Under Test
 
-### 1. **Sync Standards** (`scripts/sync-standards.ps1`)
+### 1. **Add-on Asset Generation** (`scripts/add-ons/Generate-Assets-AddOn.ps1`)
+Parameterized template for generating add-on assets and .wepkg packages.
+
+### 2. **Sync Standards** (`scripts/sync-standards.ps1`)
 Synchronizes files across Evergine repositories based on manifest configuration.
 
-### 2. **Binding Generation** (`scripts/binding/Generate-Bindings-DotNet.ps1`)
+### 3. **Binding Generation** (`scripts/binding/Generate-Bindings-DotNet.ps1`)
 Parameterized template for generating .NET bindings across different repositories.
 
-### 3. **NuGet Packaging** (`scripts/common/Generate-NuGets-DotNet.ps1`)
+### 4. **NuGet Packaging** (`scripts/common/Generate-NuGets-DotNet.ps1`)
 Unified script for generating NuGet packages supporting both:
 - **Binding style**: Date-based versions with revision numbers
 - **Add-on style**: Direct version specification
 
-### 4. **Shared Helpers** (`scripts/common/Helpers.ps1`)
+### 5. **Shared Helpers** (`scripts/common/Helpers.ps1`)
 Common utilities for logging, variable display, and file operations.
 
 ## Requirements
@@ -83,6 +92,9 @@ $Results = .\tests\Run-Tests.ps1 -PassThru
 
 ### Individual Test Files
 ```powershell
+# Test add-on asset generation script
+Invoke-Pester .\tests\unit\Generate-Assets-AddOn.Tests.ps1
+
 # Test sync standards functionality
 Invoke-Pester .\tests\unit\SyncStandards.Tests.ps1
 
@@ -97,6 +109,7 @@ Invoke-Pester .\tests\unit\Helpers.Tests.ps1
 
 # Integration tests
 Invoke-Pester .\tests\integration\SyncStandards.Integration.Tests.ps1
+Invoke-Pester .\tests\integration\ActionsVersionSuffix.Integration.Tests.ps1
 ```
 
 ### Automatic Cleanup
@@ -108,6 +121,13 @@ All tests include automatic cleanup of build artifacts:
 Cleanup occurs both **per test file** (AfterAll) and **globally** (Run-Tests.ps1).
 
 ## Test Coverage
+
+### Add-on Asset Generation Tests (XX tests)
+- **Parameter validation**: Required parameters and combinations
+- **Asset generation**: .wepkg package creation and output handling
+- **Path handling**: Project path resolution and file operations
+- **Error conditions**: Missing files, invalid parameters
+- **Integration scenarios**: Real-world asset generation workflows
 
 ### Sync Standards Tests (24 tests)
 - **Get-RawUrl**: GitHub URL generation with explicit parameters
@@ -139,8 +159,9 @@ Cleanup occurs both **per test file** (AfterAll) and **globally** (Run-Tests.ps1
 - **ShowVariables**: Hashtable display in both modern and legacy formats
 - **CreateOutputFolder**: Directory creation with error handling
 
-### Integration Tests (8 tests)
+### Integration Tests (X tests)
 - **End-to-end sync**: Complete workflow testing
+- **GitHub Actions version suffix**: Version suffix functionality testing
 - **Override handling**: Complex remap and ignore scenarios
 - **Error handling**: Comprehensive failure mode testing
 
@@ -207,6 +228,15 @@ This approach ensures:
 - Invalid NuGet version formats preventing dotnet pack failures
 
 ## Adding New Tests
+
+### For Add-on Scripts
+1. Choose appropriate test file:
+   - `Generate-Assets-AddOn.Tests.ps1` for add-on asset generation
+   - `Generate-Bindings-DotNet.Tests.ps1` for binding generation
+   - `Generate-NuGets-DotNet.Tests.ps1` for NuGet packaging
+   - `Helpers.Tests.ps1` for shared utilities
+2. Add test scenarios with proper mocking strategy
+3. Use existing fixtures or create new .csproj files in `tests/fixtures/`
 
 ### For Sync Standards
 1. Edit `tests/unit/SyncStandards.Tests.ps1`

@@ -1,0 +1,152 @@
+name: Add-on Common CI
+
+on:
+  workflow_call:
+    inputs:
+      assets-project:
+        description: 'Path to the assets .csproj file'
+        required: true
+        type: string
+      nuget-projects:
+        description: 'Comma-separated or newline-separated list of .csproj paths to pack for NuGet'
+        required: false
+        type: string
+        default: ''
+      nuget-dependency-projects:
+        description: 'Comma-separated list of .csproj paths that need to be built first (dependencies) but won''t generate NuGet packages'
+        required: false
+        type: string
+        default: ''
+      version:
+        description: 'Direct version string to use for packages (e.g., "3.4.22.288-local"). Cannot be used with revision.'
+        required: false
+        type: string
+        default: ''
+      revision:
+        description: 'Revision number to append to date-based version (e.g., "123" -> "2025.10.29.123"). Cannot be used with version.'
+        required: false
+        type: string
+        default: ''
+      version-suffix:
+        description: 'Version suffix to append to the final version (e.g., "nightly", "beta"). Will add dash separator automatically.'
+        required: false
+        type: string
+        default: ''
+      build-verbosity:
+        description: 'dotnet verbosity level'
+        required: false
+        type: string
+        default: 'normal'
+      build-configuration:
+        description: 'Build configuration (Release, Debug, etc.)'
+        required: false
+        type: string
+        default: 'Release'
+      output-folder:
+        description: 'Output directory for generated .wepkg files'
+        required: false
+        type: string
+        default: 'wepkgs'
+      restore-workloads:
+        description: 'Restore .NET workloads for projects before packaging'
+        required: false
+        type: boolean
+        default: false
+      version-token:
+        description: 'Version token to replace in .wespec files'
+        required: false
+        type: string
+        default: '2025.0.0.0-preview'
+      dotnet-version:
+        description: '.NET version to use'
+        required: false
+        type: string
+        default: '8.0.x'
+      upload-artifacts:
+        description: 'Whether to upload generated .wepkg files as artifacts'
+        required: false
+        type: boolean
+        default: true
+      nugets-script-path:
+        description: 'Path to the Generate-NuGets-DotNet.ps1 script'
+        required: false
+        type: string
+        default: 'build/scripts/Generate-NuGets-DotNet.ps1'
+      assets-package-script-path:
+        description: 'Path to the Generate-Assets-AddOn.ps1 script'
+        required: false
+        type: string
+        default: 'build/scripts/Generate-Assets-AddOn.ps1'
+      helpers-path:
+        description: 'Path to the Helpers.ps1 file. Defaults to Helpers.ps1 in the same directory as the script.'
+        required: false
+        type: string
+        default: 'build/scripts/Helpers.ps1'
+
+jobs:
+  generate-packages:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v5
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: ${{ inputs.dotnet-version }}
+
+    - name: Generate NuGet packages
+      uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-nugets-dotnet@main
+      with:
+        script-path: ${{ inputs.nugets-script-path }}
+        helpers-path: ${{ inputs.helpers-path }}
+        projects: ${{ inputs.nuget-projects }}
+        dependency-projects: ${{ inputs.nuget-dependency-projects }}
+        version: ${{ inputs.version }}
+        revision: ${{ inputs.revision }}
+        version-suffix: ${{ inputs.version-suffix }}
+        build-verbosity: ${{ inputs.build-verbosity }}
+        build-configuration: ${{ inputs.build-configuration }}
+        restore-workloads: ${{ inputs.restore-workloads }}
+        output-folder: 'nupkgs'
+
+    - name: Generate add-on assets
+      uses: EvergineTeam/evergine-standards/.github/actions/addon-generate-assets@main
+      with:
+        script-path: ${{ inputs.assets-package-script-path }}
+        helpers-path: ${{ inputs.helpers-path }}
+        assets-project: ${{ inputs.assets-project }}
+        version: ${{ inputs.version }}
+        revision: ${{ inputs.revision }}
+        version-suffix: ${{ inputs.version-suffix }}
+        build-verbosity: ${{ inputs.build-verbosity }}
+        build-configuration: ${{ inputs.build-configuration }}
+        output-folder: ${{ inputs.output-folder }}
+        version-token: ${{ inputs.version-token }}
+
+    - name: List generated files
+      run: |
+        if (Test-Path "nupkgs") {
+          Write-Host "Generated NuGet packages:"
+          Get-ChildItem "nupkgs" -Filter "*.nupkg" | ForEach-Object { Write-Host "  $($_.Name)" }
+        }
+        if (Test-Path "${{ inputs.output-folder }}") {
+          Write-Host "Generated add-on assets:"
+          Get-ChildItem "${{ inputs.output-folder }}" -Filter "*.wepkg" | ForEach-Object { Write-Host "  $($_.Name)" }
+        }
+      shell: pwsh
+
+    - name: Upload NuGet packages
+      if: ${{ inputs.upload-artifacts }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-packages
+        path: nupkgs/**/*.nupkg
+
+    - name: Upload generated assets
+      if: ${{ inputs.upload-artifacts }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: addon-assets
+        path: ${{ inputs.output-folder }}/**/*.wepkg

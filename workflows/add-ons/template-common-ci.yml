@@ -1,0 +1,37 @@
+# Add-on CI - Simple Template
+
+# This template is for Evergine add-ons that generate .wepkg assets and optionally NuGet packages.
+# Copy this file to your repository as `.github/workflows/CI.yml` and customize the inputs below.
+
+name: CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  ci:
+    uses: EvergineTeam/evergine-standards/.github/workflows/addon-common-ci.yml@main
+    with:
+      assets-project: "YourAddon.Assets/YourAddon.Assets.csproj"  # Path to your assets .csproj
+      nuget-projects: |                                           # NuGet projects (one per line)
+        Source/YourAddon/YourAddon.csproj
+        Source/YourAddon.Editor/YourAddon.Editor.csproj
+      build-configuration: "Release"                              # Build configuration (Release, Debug, etc.)
+      dotnet-version: "8.0.x"                                     # .NET version to use
+      upload-artifacts: false                                      # Upload packages as workflow artifacts
+      revision: ${{ github.run_number }}                          # Revision for date-based version
+
+# Tips:
+# - For direct version:
+#   version: "3.4.22.288-local"
+# - For date-based version:
+#   revision: ${{ github.run_number }}  # Uses github.run_number for automatic versioning
+# - For multiple NuGet projects:
+#   nuget-projects: |
+#     Source/Project1/Project1.csproj
+#     Source/Project2/Project2.csproj
+# - Leave nuget-projects empty if you only need .wepkg assets

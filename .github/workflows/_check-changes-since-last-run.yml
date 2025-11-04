@@ -1,0 +1,78 @@
+name: Check for Changes Since Last Successful Run (Reusable)
+
+description: >
+  Reusable workflow to check if there are changes since the last successful run of a specific workflow.
+  Useful for conditional execution of nightly builds or other scheduled workflows.
+
+on:
+  workflow_call:
+    inputs:
+      workflow-filename:
+        description: 'Filename of the workflow to check (e.g., "cd-nightly.yml")'
+        required: true
+        type: string
+    outputs:
+      has_changes:
+        description: 'Whether there are changes since the last successful run'
+        value: ${{ jobs.check_changes.outputs.has_changes }}
+      last_sha:
+        description: 'SHA of the last successful run'
+        value: ${{ jobs.check_changes.outputs.last_sha }}
+      current_sha:
+        description: 'SHA of the current run'
+        value: ${{ jobs.check_changes.outputs.current_sha }}
+
+jobs:
+  check_changes:
+    runs-on: ubuntu-latest
+    outputs:
+      has_changes: ${{ steps.changes_check.outputs.has_changes }}
+      last_sha: ${{ steps.last_commit.outputs.last_sha }}
+      current_sha: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v5
+      
+      - name: Encode workflow filename
+        id: encode_workflow
+        shell: pwsh
+        run: |
+          $encoded = [System.Uri]::EscapeDataString("${{ inputs.workflow-filename }}")
+          echo "encoded=$encoded" >> $env:GITHUB_OUTPUT
+            
+      - name: Get last successful run
+        uses: octokit/request-action@v2.x
+        id: check_last_run
+        with:
+          route: GET /repos/${{ github.repository }}/actions/workflows/${{ steps.encode_workflow.outputs.encoded }}/runs?per_page=1&status=completed
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set last successful commit hash
+        run: |
+          LAST_SHA="${{ fromJson(steps.check_last_run.outputs.data).workflow_runs[0].head_sha }}"
+          if [ "$LAST_SHA" = "null" ] || [ -z "$LAST_SHA" ]; then
+            echo "No previous successful runs found, assuming changes exist"
+            echo "last_sha=" >> $GITHUB_OUTPUT
+          else
+            echo "last_sha=$LAST_SHA" >> $GITHUB_OUTPUT
+          fi
+        id: last_commit
+      
+      - name: Check for changes
+        run: |
+          LAST_SHA="${{ steps.last_commit.outputs.last_sha }}"
+          CURRENT_SHA="${{ github.sha }}"
+          
+          if [ -z "$LAST_SHA" ]; then
+            echo "No previous successful runs found - assuming changes exist"
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          elif [ "$LAST_SHA" = "$CURRENT_SHA" ]; then
+            echo "No changes since last successful run ($LAST_SHA)"
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "Changes detected since last successful run"
+            echo "Last successful: $LAST_SHA"
+            echo "Current: $CURRENT_SHA"
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+        id: changes_check

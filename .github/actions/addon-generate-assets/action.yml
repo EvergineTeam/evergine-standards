@@ -1,0 +1,85 @@
+name: 'Generate Add-on Assets'
+description: 'Generates .wepkg asset packages for Evergine add-ons'
+
+inputs:
+  script-path:
+    description: 'Path to the Generate-Assets-AddOn.ps1 script'
+    required: false
+    default: 'build/scripts/Generate-Assets-AddOn.ps1'
+  helpers-path:
+    description: 'Path to the Helpers.ps1 file. Defaults to Helpers.ps1 in the same directory as the script.'
+    required: false
+    default: 'build/scripts/Helpers.ps1'
+  assets-project:
+    description: 'Path to the assets .csproj file'
+    required: true
+  version:
+    description: 'Direct version string to use for packages (e.g., "3.4.22.288-local"). Cannot be used with revision.'
+    required: false
+    default: ''
+  revision:
+    description: 'Revision number to append to date-based version (e.g., "123" -> "2025.10.29.123"). Cannot be used with version.'
+    required: false
+    default: ''
+  version-suffix:
+    description: 'Version suffix to append to the final version (e.g., "nightly", "beta"). Will add dash separator automatically.'
+    required: false
+    default: ''
+  build-verbosity:
+    description: 'dotnet verbosity level'
+    required: false
+    default: 'normal'
+  build-configuration:
+    description: 'Build configuration (Release, Debug, etc.)'
+    required: false
+    default: 'Release'
+  output-folder:
+    description: 'Output directory for generated .wepkg files'
+    required: false
+    default: 'wepkgs'
+  version-token:
+    description: 'Version token to replace in .wespec files'
+    required: false
+    default: '2025.0.0.0-preview'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Generate add-on assets
+      shell: pwsh
+      run: |
+        # Build arguments as hashtable for proper splatting
+        $params = @{
+          AssetsCsprojPath = "${{ inputs.assets-project }}"
+          BuildVerbosity = "${{ inputs.build-verbosity }}"
+          BuildConfiguration = "${{ inputs.build-configuration }}"
+          OutputFolderBase = "${{ inputs.output-folder }}"
+          VersionToken = "${{ inputs.version-token }}"
+          HelpersPath = "${{ inputs.helpers-path }}"
+        }
+        
+        # Add version suffix if provided
+        $versionSuffix = "${{ inputs.version-suffix }}"
+        if (-not [string]::IsNullOrWhiteSpace($versionSuffix)) {
+          $params.VersionSuffix = $versionSuffix
+        }
+        
+        # Handle version/revision logic with proper validation
+        $version = "${{ inputs.version }}"
+        $revision = "${{ inputs.revision }}"
+        
+        if (-not [string]::IsNullOrWhiteSpace($version) -and -not [string]::IsNullOrWhiteSpace($revision)) {
+          Write-Error "Cannot specify both version and revision"
+          exit 1
+        }
+        
+        if (-not [string]::IsNullOrWhiteSpace($version)) {
+          $params.Version = $version
+        } elseif (-not [string]::IsNullOrWhiteSpace($revision)) {
+          $params.Revision = $revision
+        } else {
+          Write-Error "Either version or revision must be specified"
+          exit 1
+        }
+        
+        & "${{ inputs.script-path }}" @params

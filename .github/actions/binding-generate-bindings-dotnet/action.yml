@@ -6,7 +6,7 @@ inputs:
   script-path:
     description: 'Path to the Generate-Bindings-DotNet.ps1 script'
     required: false
-    default: './Generate-Bindings-DotNet.ps1'
+    default: './build/scripts/Generate-Bindings-DotNet.ps1'
   generator-project:
     description: 'Path to the generator .csproj file'
     required: true
@@ -29,11 +29,15 @@ inputs:
     description: 'Build configuration (Debug/Release)'
     required: false
     default: 'Release'
+  restore-workloads:
+    description: 'Restore .NET workloads for projects before packaging'
+    required: false
 
 runs:
   using: "composite"
   steps:
     - name: Restore .NET workloads for generator
+      if: ${{ inputs.restore-workloads == 'true' }}
       shell: pwsh
       run: |
         dotnet workload restore "${{ inputs.generator-project }}"

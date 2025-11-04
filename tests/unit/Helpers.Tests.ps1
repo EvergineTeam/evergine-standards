@@ -229,4 +229,155 @@ Describe "Error Handling" {
             { ShowVariables $complexParams } | Should -Not -Throw
         }
     }
+    
+    Context "Version Resolution Functions" {
+        Describe "Get-VersionFromRevision" {
+            It "Should generate version from revision using current date" {
+                $revision = "123"
+                $expectedDate = Get-Date -Format "yyyy.M.d"
+                $result = Get-VersionFromRevision $revision
+                $result | Should -Be "$expectedDate.123"
+            }
+            
+            It "Should throw on null or empty revision" {
+                { Get-VersionFromRevision "" } | Should -Throw "*cannot be null or empty*"
+                { Get-VersionFromRevision $null } | Should -Throw "*cannot be null or empty*"
+            }
+        }
+        
+        Describe "Test-VersionFormat" {
+            It "Should validate correct semantic version formats" {
+                Test-VersionFormat "1.0.0" | Should -Be $true
+                Test-VersionFormat "1.2.3" | Should -Be $true
+                Test-VersionFormat "1.0.0-alpha" | Should -Be $true
+                Test-VersionFormat "1.0.0-preview" | Should -Be $true
+                Test-VersionFormat "1.0.0.123" | Should -Be $true
+                Test-VersionFormat "2025.11.3.456" | Should -Be $true
+                Test-VersionFormat "1.0.0-alpha.1" | Should -Be $true
+            }
+            
+            It "Should reject invalid version formats" {
+                Test-VersionFormat "" | Should -Be $false
+                Test-VersionFormat $null | Should -Be $false
+                Test-VersionFormat "1" | Should -Be $false
+                Test-VersionFormat "1.0" | Should -Be $false
+                Test-VersionFormat "1.0.0-" | Should -Be $false
+                Test-VersionFormat "1.0.0.0.0" | Should -Be $false
+                Test-VersionFormat "v1.0.0" | Should -Be $false
+                Test-VersionFormat "1.0.0_alpha" | Should -Be $false
+            }
+        }
+        
+        Describe "Resolve-Version" {
+            It "Should resolve version from Version parameter" {
+                $result = Resolve-Version -version "1.2.3" -revision ""
+                $result | Should -Be "1.2.3"
+            }
+            
+            It "Should resolve version from Revision parameter" {
+                $expectedDate = Get-Date -Format "yyyy.M.d"
+                $result = Resolve-Version -version "" -revision "456"
+                $result | Should -Be "$expectedDate.456"
+            }
+            
+            It "Should throw when both Version and Revision are provided" {
+                { Resolve-Version -version "1.0.0" -revision "123" } | Should -Throw "*Cannot specify both*"
+            }
+            
+            It "Should throw when neither Version nor Revision are provided" {
+                { Resolve-Version -version "" -revision "" } | Should -Throw "*must be provided*"
+                { Resolve-Version -version $null -revision $null } | Should -Throw "*must be provided*"
+            }
+            
+            It "Should throw when resolved version has invalid format" {
+                { Resolve-Version -version "invalid-version" -revision "" } | Should -Throw "*Invalid version format*"
+            }
+            
+            It "Should validate semantic versioning rules" {
+                $result = Resolve-Version -version "2025.1.0.123-preview" -revision ""
+                $result | Should -Be "2025.1.0.123-preview"
+                
+                $expectedDate = Get-Date -Format "yyyy.M.d"
+                $result = Resolve-Version -version "" -revision "789"
+                $result | Should -Match "^\d{4}\.\d{1,2}\.\d{1,2}\.789$"
+            }
+        }
+    }
+}
+
+Describe "Resolve-Version Function - VersionSuffix Support" {
+    Context "Version with suffix" {
+        It "Should append suffix with dash to version" {
+            $result = Resolve-Version -version "1.0.0" -versionSuffix "nightly"
+            $result | Should -Be "1.0.0-nightly"
+        }
+        
+        It "Should handle suffix with leading dash" {
+            $result = Resolve-Version -version "1.0.0" -versionSuffix "-nightly"
+            $result | Should -Be "1.0.0-nightly"
+        }
+        
+        It "Should handle multiple dash separators in suffix" {
+            $result = Resolve-Version -version "1.0.0" -versionSuffix "alpha-1"
+            $result | Should -Be "1.0.0-alpha-1"
+        }
+        
+        It "Should handle complex pre-release suffix" {
+            $result = Resolve-Version -version "2.1.3" -versionSuffix "beta.2"
+            $result | Should -Be "2.1.3-beta.2"
+        }
+        
+        It "Should work with four-part version" {
+            $result = Resolve-Version -version "1.0.0.123" -versionSuffix "nightly"
+            $result | Should -Be "1.0.0.123-nightly"
+        }
+    }
+    
+    Context "Revision with suffix" {
+        It "Should apply suffix to calculated version from revision" {
+            $result = Resolve-Version -revision "123" -versionSuffix "nightly"
+            $expectedPattern = "^\d{4}\.\d{1,2}\.\d{1,2}\.123-nightly$"
+            $result | Should -Match $expectedPattern
+        }
+        
+        It "Should handle revision with leading dash suffix" {
+            $result = Resolve-Version -revision "456" -versionSuffix "-beta"
+            $expectedPattern = "^\d{4}\.\d{1,2}\.\d{1,2}\.456-beta$"
+            $result | Should -Match $expectedPattern
+        }
+    }
+    
+    Context "Empty or null suffix" {
+        It "Should work with empty string suffix" {
+            $result = Resolve-Version -version "1.0.0" -versionSuffix ""
+            $result | Should -Be "1.0.0"
+        }
+        
+        It "Should work with null suffix" {
+            $result = Resolve-Version -version "1.0.0" -versionSuffix $null
+            $result | Should -Be "1.0.0"
+        }
+        
+        It "Should work with whitespace-only suffix" {
+            $result = Resolve-Version -version "1.0.0" -versionSuffix "   "
+            $result | Should -Be "1.0.0"
+        }
+    }
+    
+    Context "Suffix validation" {
+        It "Should preserve valid NuGet pre-release identifiers" {
+            $result = Resolve-Version -version "1.0.0" -versionSuffix "alpha1"
+            $result | Should -Be "1.0.0-alpha1"
+        }
+        
+        It "Should work with numeric suffix" {
+            $result = Resolve-Version -version "1.0.0" -versionSuffix "20241103"
+            $result | Should -Be "1.0.0-20241103"
+        }
+        
+        It "Should handle mixed alphanumeric suffix" {
+            $result = Resolve-Version -version "1.0.0" -versionSuffix "rc1-build123"
+            $result | Should -Be "1.0.0-rc1-build123"
+        }
+    }
 }

@@ -36,19 +36,29 @@ Typical consumers include:
 /
 ├─ .github/
 │  ├─ actions/
-│  │  ├─ binding-generate-bindings-dotnet/         # Composite action for binding generation
-│  │  ├─ binding-generate-nugets-dotnet/           # Composite action for NuGet generation
-│  │  └─ commit-and-push-or-pr-update/             # Composite action for commit/push/PR automation
+│  │  ├─ addon-generate-assets/                   # Composite action for add-on asset generation
+│  │  ├─ binding-generate-bindings-dotnet/        # Composite action for binding generation
+│  │  ├─ binding-generate-nugets-dotnet/          # Composite action for NuGet generation
+│  │  ├─ commit-and-push-or-pr-update/            # Composite action for commit/push/PR automation
+│  │  └─ send-notification-email/                 # Composite action for email notifications
 │  └─ workflows/
-│     ├─ _sync-standards-reusable.yml              # Reusable GitHub Actions workflow (sync)
-│     ├─ binding-common-ci.yml                     # Reusable CI workflow for bindings (common)
-│     ├─ binding-simple-cd.yml                     # Reusable CD workflow for pure .NET bindings
-│     ├─ binding-xml-cd.yml                        # Reusable CD workflow for bindings with XML
-│     └─ sync-standards.yml                        # Template workflow for consumer repos
+│     ├─ _check-changes-since-last-run.yml        # Reusable workflow for change detection
+│     ├─ _sync-standards-reusable.yml             # Reusable GitHub Actions workflow (sync)
+│     ├─ _test-sync-standards.yml                 # Reusable test workflow
+│     ├─ addon-common-ci.yml                      # Reusable CI workflow for add-ons
+│     ├─ addon-simple-cd.yml                      # Reusable CD workflow for add-ons
+│     ├─ binding-common-ci.yml                    # Reusable CI workflow for bindings (common)
+│     ├─ binding-simple-cd.yml                    # Reusable CD workflow for pure .NET bindings
+│     ├─ binding-xml-cd.yml                       # Reusable CD workflow for bindings with XML
+│     ├─ ci.yml                                   # Main CI workflow
+│     └─ sync-standards.yml                       # Template workflow for consumer repos
 ├─ assets/
 │  └─ nuget-icon.png                              # Official NuGet package icon (512x512)
 ├─ LICENSE                                        # Canonical license file
+├─ README.md                                      # This documentation
 ├─ scripts/
+│  ├─ add-ons/
+│  │  └─ Generate-Assets-AddOn.ps1                # Template for add-on asset generation
 │  ├─ binding/
 │  │  └─ Generate-Bindings-DotNet.ps1             # Template for .NET binding generators
 │  ├─ common/
@@ -57,11 +67,45 @@ Typical consumers include:
 │  ├─ download-sync-script.ps1                    # Helper to download sync script locally
 │  └─ sync-standards.ps1                          # Synchronization script (PowerShell 7+)
 ├─ sync-manifest.json                             # Manifest defining which files to sync
-├─ workflows/
-│  └─ binding/
-│     ├─ template-simple-cd.yml                   # Reference template for pure .NET bindings
-│     └─ template-xml-cd.yml                      # Reference template for bindings with XML
+├─ temp-binding-analysis/                         # Temporary binding analysis repositories
+├─ tests/                                         # Test suite for all components
+└─ workflows/
+   ├─ add-ons/
+   │  ├─ template-cd-nightly.yml                  # Template for nightly add-on builds
+   │  ├─ template-cd-preview.yml                  # Template for preview add-on releases
+   │  ├─ template-cd-stable.yml                   # Template for stable add-on releases
+   │  └─ template-common-ci.yml                   # Template for add-on CI
+   └─ binding/
+      ├─ template-common-ci.yml                   # Template for binding CI
+      ├─ template-simple-cd.yml                   # Reference template for pure .NET bindings
+      └─ template-xml-cd.yml                      # Reference template for bindings with XML
 ```
+```
+## Add-on automation and templates
+
+This repository provides reusable workflows and composite actions to automate the build, packaging, and publication of add-ons that include both assets (.wepkg) and optional NuGet packages.
+
+### Key workflows
+- **addon-simple-cd.yml**: For add-ons with asset generation and optional NuGet packaging.
+- **addon-common-ci.yml**: Common CI workflow for add-ons.
+
+### Composite actions
+- **addon-generate-assets**: Standardized add-on asset generation.
+- **binding-generate-nugets-dotnet**: Standardized NuGet packaging (shared with bindings).
+- **send-notification-email**: Email notifications for failures.
+
+### Reference templates
+Find ready-to-use templates in `workflows/add-ons/`:
+- `template-common-ci.yml`: Example CI workflow for add-ons.
+- `template-cd-nightly.yml`: Example for nightly builds with change detection.
+- `template-cd-preview.yml`: Example for preview releases.
+- `template-cd-stable.yml`: Example for stable releases.
+
+### Change detection automation
+Add-on workflows include change detection to avoid unnecessary builds. The `_check-changes-since-last-run.yml` workflow checks if there are changes since the last successful run, ensuring efficient resource usage.
+
+---
+
 ## Binding automation and templates
 
 This repository provides reusable workflows and composite actions to automate the build, packaging, and publication of bindings (both pure .NET and those requiring XML updates).
@@ -84,6 +128,64 @@ Find ready-to-use templates in `workflows/binding/`:
 ### XML update automation
 Bindings that require XML updates use the composite action `commit-and-push-or-pr-update` to automatically commit the new XML file or open a PR if direct push is not allowed. This ensures the repository stays up to date with upstream XML definitions with minimal manual intervention.
 
+
+---
+
+## Add-on repositories support
+
+This repository includes specialized scripts for **add-on repositories** that generate Evergine add-ons with assets and optional NuGet packages. Add-on repositories can use the "add-on" group by adding it to their `.standards.override.json`:
+
+```json
+{
+  "schema": "2",
+  "groups": ["core", "add-on"]
+}
+```
+
+### Generate-Assets-AddOn.ps1
+
+A parametrized template script for generating add-on assets (.wepkg packages). It supports Evergine asset projects and standardizes the build process across add-on repositories.
+
+#### Usage
+```powershell
+./scripts/Generate-Assets-AddOn.ps1 `
+  -AssetsProject "YourAddon.Assets/YourAddon.Assets.csproj" `
+  [-Version "1.0.0"] `
+  [-Revision "123"] `
+  [-VersionSuffix "preview"] `
+  [-BuildConfiguration "Release"] `
+  [-BuildVerbosity "normal"] `
+  [-OutputFolder "wepkgs"] `
+  [-VersionToken "2025.0.0.0-preview"]
+```
+
+#### Parameters
+| Parameter | Description | Default | Required |
+|-----------|-------------|---------|----------|
+| `AssetsProject` | Path to the assets .csproj file | - | Yes |
+| `Version` | Direct version string for packages (add-ons) | - | No* |
+| `Revision` | Revision for date-based version | - | No* |
+| `VersionSuffix` | Version suffix (e.g., "preview", "nightly") | - | No |
+| `BuildConfiguration` | Build configuration (Debug/Release) | `Release` | No |
+| `BuildVerbosity` | MSBuild verbosity level | `normal` | No |
+| `OutputFolder` | Output directory for .wepkg files | `wepkgs` | No |
+| `VersionToken` | Version token to replace in .wespec files | `2025.0.0.0-preview` | No |
+
+* Either `Version` or `Revision` can be provided for different versioning strategies.
+
+#### Example
+```powershell
+# Add-on style with direct version
+./scripts/Generate-Assets-AddOn.ps1 `
+  -AssetsProject "MyAddon.Assets/MyAddon.Assets.csproj" `
+  -Version "1.0.0-preview"
+
+# Nightly style with date-based version
+./scripts/Generate-Assets-AddOn.ps1 `
+  -AssetsProject "MyAddon.Assets/MyAddon.Assets.csproj" `
+  -Revision 123 `
+  -VersionSuffix "nightly"
+```
 
 ---
 
@@ -137,6 +239,8 @@ A parametrized template script that replaces duplicated `Generate-Bindings.ps1` 
 
 A unified script for generating NuGet packages from .NET projects in binding repositories. This script replaces duplicated NuGet generation logic and ensures consistency across all bindings.
 
+The script supports **dependency projects** that need to be built first (to resolve dependencies like DLLs) but won't generate NuGet packages themselves. Only projects listed in the main `Projects` parameter will produce NuGet packages.
+
 #### Usage
 ```powershell
 # Binding style (date-based version with revision)
@@ -158,6 +262,7 @@ A unified script for generating NuGet packages from .NET projects in binding rep
 | `Version`         | Direct version string for packages (add-ons)        | -               | Yes*     |
 | `Revision`        | Revision for date-based version (bindings)          | -               | Yes*     |
 | `Projects`        | Array of .csproj paths to pack (string or array)    | -               | Yes      |
+| `DependencyProjects`| Array of .csproj paths to build first (dependencies) but won't generate NuGet packages | `@()`           | No       |
 | `OutputFolderBase`| Base folder for NuGet package output                | `nupkgs`        | No       |
 | `BuildVerbosity`  | dotnet verbosity level                              | `normal`        | No       |
 | `BuildConfiguration`| Build configuration (Release/Debug)                | `Release`       | No       |
@@ -174,12 +279,30 @@ A unified script for generating NuGet packages from .NET projects in binding rep
 
 # Add-on style (direct version)
 ./scripts/Generate-NuGets-DotNet.ps1 -Version "3.4.22.288-local" -Projects @("Source/Evergine.SampleAddon/Evergine.SampleAddon.csproj", "Source/Evergine.SampleAddon.Editor/Evergine.SampleAddon.Editor.csproj")
+
+# Building dependency projects but only packing main projects
+./scripts/Generate-NuGets-DotNet.ps1 -Revision 123 -Projects "MainProject.csproj" -DependencyProjects @("DependencyProject1.csproj", "DependencyProject2.csproj")
 ```
 
 ---
 
 
 ## Example usage
+
+### Composite action for add-on asset generation
+```yaml
+- name: Generate add-on assets
+  uses: EvergineTeam/evergine-standards/.github/actions/addon-generate-assets@main
+  with:
+    script-path: ./scripts/Generate-Assets-AddOn.ps1
+    assets-project: YourAddon.Assets/YourAddon.Assets.csproj
+    version: ${{ ... }}      # Or revision: ${{ ... }} as needed
+    version-suffix: preview
+    build-configuration: Release
+    build-verbosity: normal
+    output-folder: wepkgs
+    version-token: "2025.0.0.0-preview"
+```
 
 ### Composite action for NuGet generation
 ```yaml
@@ -188,12 +311,27 @@ A unified script for generating NuGet packages from .NET projects in binding rep
   with:
     script-path: ./scripts/Generate-NuGets-DotNet.ps1
     projects: path/to/project1.csproj,path/to/project2.csproj
+    dependency-projects: path/to/dependency1.csproj,path/to/dependency2.csproj  # Optional: projects to build but not pack
     version: ${{ ... }}      # Or revision: ${{ ... }} as needed
     output-folder: nupkgs
     build-configuration: Release
     build-verbosity: normal
     include-symbols: false
     symbols-format: snupkg
+```
+
+### Composite action for email notifications
+```yaml
+- name: Send failure notification
+  if: ${{ failure() }}
+  uses: EvergineTeam/evergine-standards/.github/actions/send-notification-email@main
+  with:
+    sendgrid-token: ${{ secrets.WAVE_SENDGRID_TOKEN }}
+    from-email: ${{ secrets.EVERGINE_EMAIL }}
+    to-emails: ${{ secrets.EVERGINE_EMAILREPORT_LIST }}
+    subject: Build failed - ${{ github.repository }}
+    additional-info: |
+      Additional context about the failure
 ```
 
 ### Composite action for commit/push/PR automation (XML update)
@@ -209,7 +347,16 @@ A unified script for generating NuGet packages from .NET projects in binding rep
     pr_body: "Automated update of XML file for binding MyBinding."
 ```
 
-### Reusable workflow for CI
+### Reusable workflow for add-on CI
+```yaml
+jobs:
+  build:
+    uses: EvergineTeam/evergine-standards/.github/workflows/addon-common-ci.yml@main
+    with:
+      configuration: Release
+```
+
+### Reusable workflow for binding CI
 ```yaml
 jobs:
   build:
@@ -411,6 +558,11 @@ The manifest defines which files are distributed to all repositories using schem
       { "src": "assets/nuget-icon.png", "dst": "assets/nuget-icon.png" },
       { "src": "tools/sync-standards.ps1", "dst": "tools/sync-standards.ps1" }
     ],
+    "add-on": [
+      { "src": "scripts/add-ons/Generate-Assets-AddOn.ps1", "dst": "scripts/Generate-Assets-AddOn.ps1", "overwrite": "always" },
+      { "src": "scripts/common/Generate-NuGets-DotNet.ps1", "dst": "scripts/Generate-NuGets-DotNet.ps1", "overwrite": "always" },
+      { "src": "scripts/common/Helpers.ps1", "dst": "scripts/Helpers.ps1", "overwrite": "always" }
+    ],
     "binding": [
       { "src": "scripts/binding/Generate-Bindings-DotNet.ps1", "dst": "scripts/Generate-Bindings-DotNet.ps1", "overwrite": "always" },
       { "src": "scripts/common/Generate-NuGets-DotNet.ps1", "dst": "scripts/Generate-NuGets-DotNet.ps1", "overwrite": "always" },
@@ -574,6 +726,11 @@ The groups feature allows different types of repositories to receive different s
 
 **Core libraries** (group: `["core"]`):
 - License, NuGet icon, sync tools
+
+**Add-on repositories** (group: `["core", "add-on"]`):
+- License, NuGet icon, sync tools
+- Standardized add-on asset generation scripts
+- Unified NuGet generation and helper scripts
 
 **Binding repositories** (group: `["core", "binding"]`):
 - License, NuGet icon, sync tools

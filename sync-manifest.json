@@ -30,6 +30,23 @@
                 "dst": "build/scripts/Helpers.ps1",
                 "overwrite": "always"
             }
+        ],
+        "add-on": [
+            {
+                "src": "scripts/add-ons/Generate-Assets-AddOn.ps1",
+                "dst": "build/scripts/Generate-Assets-AddOn.ps1",
+                "overwrite": "always"
+            },
+            {
+                "src": "scripts/common/Generate-NuGets-DotNet.ps1",
+                "dst": "build/scripts/Generate-NuGets-DotNet.ps1",
+                "overwrite": "always"
+            },
+            {
+                "src": "scripts/common/Helpers.ps1",
+                "dst": "build/scripts/Helpers.ps1",
+                "overwrite": "always"
+            }
         ]
     }
 }

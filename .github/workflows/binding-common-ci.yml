@@ -18,6 +18,11 @@ on:
         description: 'Path to the binding .csproj file'
         required: true
         type: string
+      nuget-dependency-projects:
+        description: 'Comma-separated list of .csproj paths that need to be built first (dependencies) but won''t generate NuGet packages'
+        required: false
+        type: string
+        default: ''
       target-framework:
         description: 'Target framework for the binding'
         required: false
@@ -38,6 +43,11 @@ on:
         required: false
         type: string
         default: 'Release'
+      restore-workloads:
+        description: 'Restore .NET workloads for projects before packaging'
+        required: false
+        type: boolean
+        default: false
       nuget-artifacts:
         description: 'Upload generated NuGets as workflow artifacts (true/false)'
         required: false
@@ -68,6 +78,11 @@ on:
         required: false
         type: string
         default: ''
+      version-suffix:
+        description: 'Version suffix to append to the final version (e.g., "nightly", "beta"). Will add dash separator automatically.'
+        required: false
+        type: string
+        default: ''
       include-symbols:
         description: 'Whether to include debug symbols in packages'
         required: false
@@ -85,7 +100,7 @@ on:
         default: '8.x'
 jobs:
   build_and_generate:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -105,6 +120,7 @@ jobs:
           runtime-identifier: ${{ inputs.runtime-identifier }}
           build-verbosity: ${{ inputs.build-verbosity }}
           build-configuration: ${{ inputs.build-configuration }}
+          restore-workloads: ${{ inputs.restore-workloads }}
       
       - name: Restore .NET workloads for binding project
         if: inputs.nuget-artifacts == false
@@ -126,9 +142,12 @@ jobs:
           helpers-path: ${{ inputs.helpers-path }}
           version: ${{ inputs.version }}
           revision: ${{ inputs.revision }}
+          version-suffix: ${{ inputs.version-suffix }}
           projects: ${{ inputs.binding-project }}
+          dependency-projects: ${{ inputs.nuget-dependency-projects }}
           build-verbosity: ${{ inputs.build-verbosity }}
           build-configuration: ${{ inputs.build-configuration }}
+          restore-workloads: ${{ inputs.restore-workloads }}
           include-symbols: ${{ inputs.include-symbols }}
           symbols-format: ${{ inputs.symbols-format }}
 

@@ -60,7 +60,7 @@ Describe "Generate-NuGets-DotNet Version Validation Tests" {
         }
 		
         It "Should reject empty version" {
-            { & $scriptPath -Version "" -Projects $singleProject -HelpersPath $helpersPath } | Should -Throw "*Either -Version or -Revision parameter must be provided*"
+            { & $scriptPath -Version "" -Projects $singleProject -HelpersPath $helpersPath } | Should -Throw "*Either Version or Revision parameter must be provided*"
         }
 		
         It "Should reject version with leading zeros" {

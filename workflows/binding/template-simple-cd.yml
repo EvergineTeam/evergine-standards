@@ -7,8 +7,12 @@ name: CD
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 0 1 * *' # Monthly update on day 1 at 00:00
+    inputs:
+      skip-assets-publishing:
+        description: 'Skip assets publishing'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   cd:
@@ -24,8 +28,8 @@ jobs:
       runtime-identifier: "win-x64"                # Runtime identifier (win-x64, linux-x64, etc.)
       build-configuration: "Release"               # Build configuration (Release, Debug, etc.)
       revision: ${{ github.run_number }}           # Revision for date-based version (bindings style). Use with bindings.
-      publish-enabled: true                        # Publish NuGets to Nuget.org
-      enable-email-notifications: false            # Enable email notifications on failure
+      publish-enabled: ${{ true && !inputs.skip-assets-publishing }}  # Publish NuGets to Nuget.org
+      enable-email-notifications: true            # Enable email notifications on failure
     secrets:
       NUGET_UPLOAD_TOKEN: ${{ secrets.EVERGINE_NUGETORG_TOKEN }}
       WAVE_SENDGRID_TOKEN: ${{ secrets.WAVE_SENDGRID_TOKEN }}

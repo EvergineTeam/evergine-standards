@@ -26,6 +26,11 @@ on:
         description: 'Path to the binding .csproj file'
         required: true
         type: string
+      dependency-projects:
+        description: 'Comma-separated list of .csproj paths that need to be built first (dependencies) but won''t generate NuGet packages'
+        required: false
+        type: string
+        default: ''
       target-framework:
         description: 'Target framework for the binding'
         required: false
@@ -56,6 +61,11 @@ on:
         required: false
         type: string
         default: 'Release'
+      restore-workloads:
+        description: 'Restore .NET workloads for projects before packaging'
+        required: false
+        type: boolean
+        default: false
       version:
         description: 'Direct version string to use for packages (e.g., "3.4.22.288-local")'
         required: false
@@ -121,7 +131,7 @@ on:
         required: false
 jobs:
   check_xml:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     outputs:
       xml_changed: ${{ steps.compare_hashes.outputs.xml_changed }}
     steps:
@@ -178,7 +188,7 @@ jobs:
   build_and_publish:
     needs: check_xml
     if: needs.check_xml.outputs.xml_changed == 'true'
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -230,6 +240,7 @@ jobs:
           runtime-identifier: ${{ inputs.runtime-identifier }}
           build-verbosity: ${{ inputs.build-verbosity }}
           build-configuration: ${{ inputs.build-configuration }}
+          restore-workloads: ${{ inputs.restore-workloads }}
 
       - name: Generate NuGets
         uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-nugets-dotnet@main
@@ -237,9 +248,11 @@ jobs:
           script-path: ${{ inputs.nugets-script-path }}
           helpers-path: ${{ inputs.helpers-path }}
           projects: ${{ inputs.binding-project }}
+          dependency-projects: ${{ inputs.dependency-projects }}
           output-folder: ${{ inputs.output-folder }}
           build-verbosity: ${{ inputs.build-verbosity }}
           build-configuration: ${{ inputs.build-configuration }}
+          restore-workloads: ${{ inputs.restore-workloads }}
           version: ${{ inputs.version }}
           revision: ${{ inputs.revision }}
           include-symbols: ${{ inputs.include-symbols }}
@@ -258,13 +271,11 @@ jobs:
           ls *.nupkg
           dotnet nuget push "**/*.nupkg" --skip-duplicate --no-symbols -k "$env:token" -s https://api.nuget.org/v3/index.json
 
-      - name: SendGrid Mail Action
+      - name: Send failure notification
         if: ${{ failure() && inputs.enable-email-notifications == true }}
-        uses: mmichailidis/sendgrid-mail-action@v1.1
+        uses: EvergineTeam/evergine-standards/.github/actions/send-notification-email@main
         with:
           sendgrid-token: ${{ secrets.WAVE_SENDGRID_TOKEN }}
-          mail: ${{ secrets.EVERGINE_EMAILREPORT_LIST }}
-          from: ${{ secrets.EVERGINE_EMAIL }}
-          subject: Binding ${{ inputs.generator-name }} - CD NuGet publish failed
-          individual: false
-          text: Something went wrong when publishing NuGets for binding ${{ inputs.generator-name }}.
+          from-email: ${{ secrets.EVERGINE_EMAIL }}
+          to-emails: ${{ secrets.EVERGINE_EMAILREPORT_LIST }}
+          subject: Binding XML CD publish failed - ${{ github.repository }}

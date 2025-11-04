@@ -1,0 +1,229 @@
+name: Add-on Simple CD (Reusable)
+
+description: >
+  Reusable workflow for publishing add-on assets and optionally NuGet packages.
+
+on:
+  workflow_call:
+    inputs:
+      assets-project:
+        description: 'Path to the assets .csproj file'
+        required: true
+        type: string
+      nuget-projects:
+        description: 'Comma-separated or newline-separated list of .csproj paths to pack for NuGet'
+        required: false
+        type: string
+        default: ''
+      nuget-dependency-projects:
+        description: 'Comma-separated list of .csproj paths that need to be built first (dependencies) but won''t generate NuGet packages'
+        required: false
+        type: string
+        default: ''
+      version:
+        description: 'Direct version string to use for packages (e.g., "3.4.22.288-local"). Cannot be used with revision.'
+        required: false
+        type: string
+        default: ''
+      revision:
+        description: 'Revision number to append to date-based version (e.g., "123" -> "2025.10.29.123"). Cannot be used with version.'
+        required: false
+        type: string
+        default: ''
+      version-suffix:
+        description: 'Version suffix to append to the final version (e.g., "nightly", "beta"). Will add dash separator automatically.'
+        required: false
+        type: string
+        default: ''
+      build-verbosity:
+        description: 'dotnet verbosity level'
+        required: false
+        type: string
+        default: 'normal'
+      build-configuration:
+        description: 'Build configuration (Release, Debug, etc.)'
+        required: false
+        type: string
+        default: 'Release'
+      restore-workloads:
+        description: 'Restore .NET workloads for projects before packaging'
+        required: false
+        type: boolean
+        default: false
+      output-folder:
+        description: 'Output directory for generated .wepkg files'
+        required: false
+        type: string
+        default: 'wepkgs'
+      nuget-output-folder:
+        description: 'Output directory for NuGet packages'
+        required: false
+        type: string
+        default: 'nupkgs'
+      version-token:
+        description: 'Version token to replace in .wespec files'
+        required: false
+        type: string
+        default: '2025.0.0.0-preview'
+      dotnet-version:
+        description: '.NET version to use'
+        required: false
+        type: string
+        default: '8.0.x'
+      include-symbols:
+        description: 'Whether to include debug symbols in NuGet packages'
+        required: false
+        type: boolean
+        default: false
+      symbols-format:
+        description: 'Symbol package format: snupkg (modern) or symbols.nupkg (legacy)'
+        required: false
+        type: string
+        default: 'snupkg'
+      nugets-script-path:
+        description: 'Path to the Generate-NuGets-DotNet.ps1 script'
+        required: false
+        type: string
+        default: 'build/scripts/Generate-NuGets-DotNet.ps1'
+      assets-package-script-path:
+        description: 'Path to the Generate-Assets-AddOn.ps1 script'
+        required: false
+        type: string
+        default: 'build/scripts/Generate-Assets-AddOn.ps1'
+      helpers-path:
+        description: 'Path to the Helpers.ps1 file. Defaults to Helpers.ps1 in the same directory as the script.'
+        required: false
+        type: string
+        default: 'build/scripts/Helpers.ps1'
+      publish-packages:
+        description: 'Publish both NuGet packages and .wepkg assets (to NuGet.org and Azure Storage)'
+        required: false
+        type: boolean
+        default: true
+      enable-email-notifications:
+        description: 'Enable email notifications on failure'
+        required: false
+        type: boolean
+        default: false
+      # Azure Storage settings for .wepkg files
+      storage-account-name:
+        description: 'Azure storage account name for .wepkg files'
+        required: false
+        type: string
+        default: ''
+      storage-container-name:
+        description: 'Azure storage container name for .wepkg files'
+        required: false
+        type: string
+        default: ''
+    secrets:
+      NUGET_UPLOAD_TOKEN:
+        description: 'NuGet.org API key for publishing packages'
+        required: false
+      WAVE_SENDGRID_TOKEN:
+        description: 'SendGrid API key for email notifications'
+        required: false
+      EVERGINE_EMAILREPORT_LIST:
+        description: 'Email addresses to send failure notifications to'
+        required: false
+      EVERGINE_EMAIL:
+        description: 'Sender email address for notifications'
+        required: false
+      AZURE_STORAGE_SAS_TOKEN:
+        description: 'Azure Storage SAS token for uploading .wepkg files'
+        required: false
+
+jobs:
+  build_and_publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v5
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: ${{ inputs.dotnet-version }}
+
+    - name: Generate NuGet packages
+      uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-nugets-dotnet@main
+      with:
+        script-path: ${{ inputs.nugets-script-path }}
+        helpers-path: ${{ inputs.helpers-path }}
+        projects: ${{ inputs.nuget-projects }}
+        dependency-projects: ${{ inputs.nuget-dependency-projects }}
+        version: ${{ inputs.version }}
+        revision: ${{ inputs.revision }}
+        version-suffix: ${{ inputs.version-suffix }}
+        build-verbosity: ${{ inputs.build-verbosity }}
+        build-configuration: ${{ inputs.build-configuration }}
+        restore-workloads: ${{ inputs.restore-workloads }}
+        output-folder: ${{ inputs.nuget-output-folder }}
+        include-symbols: ${{ inputs.include-symbols }}
+        symbols-format: ${{ inputs.symbols-format }}
+
+    - name: Generate add-on assets
+      uses: EvergineTeam/evergine-standards/.github/actions/addon-generate-assets@main
+      with:
+        script-path: ${{ inputs.assets-package-script-path }}
+        helpers-path: ${{ inputs.helpers-path }}
+        assets-project: ${{ inputs.assets-project }}
+        version: ${{ inputs.version }}
+        revision: ${{ inputs.revision }}
+        version-suffix: ${{ inputs.version-suffix }}
+        build-verbosity: ${{ inputs.build-verbosity }}
+        build-configuration: ${{ inputs.build-configuration }}
+        output-folder: ${{ inputs.output-folder }}
+        version-token: ${{ inputs.version-token }}
+
+    - name: List generated files
+      run: |
+        if (Test-Path "${{ inputs.nuget-output-folder }}") {
+          Write-Host "Generated NuGet packages:"
+          Get-ChildItem "${{ inputs.nuget-output-folder }}" -Filter "*.nupkg" | ForEach-Object { Write-Host "  $($_.Name)" }
+        }
+        if (Test-Path "${{ inputs.output-folder }}") {
+          Write-Host "Generated add-on assets:"
+          Get-ChildItem "${{ inputs.output-folder }}" -Filter "*.wepkg" | ForEach-Object { Write-Host "  $($_.Name)" }
+        }
+      shell: pwsh
+
+    - name: Upload add-on assets as artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: addon-assets
+        path: ${{ inputs.output-folder }}/**/*.wepkg
+
+    - name: Upload NuGet packages as artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-packages
+        path: ${{ inputs.nuget-output-folder }}/**/*.nupkg
+
+    - name: Publish NuGet packages
+      if: ${{ success() && inputs.nuget-projects != '' && inputs.publish-packages == true }}
+      env:
+        token: ${{ secrets.NUGET_UPLOAD_TOKEN }}
+      run: |
+        cd ${{ inputs.nuget-output-folder }}
+        dotnet nuget push "**/*.nupkg" --skip-duplicate --no-symbols -k "$env:token" -s https://api.nuget.org/v3/index.json
+      shell: pwsh
+
+    - name: Upload add-on assets to Azure Storage
+      if: ${{ success() && inputs.publish-packages == true && inputs.storage-account-name != '' }}
+      uses: azure/CLI@v1
+      with:
+        inlineScript: |
+          az storage blob upload-batch --destination ${{ inputs.storage-container-name }} --source ${{ inputs.output-folder }} --account-name ${{ inputs.storage-account-name }} --sas-token "${{ secrets.AZURE_STORAGE_SAS_TOKEN }}"
+
+    - name: Send failure notification
+      if: ${{ failure() && inputs.enable-email-notifications == true }}
+      uses: EvergineTeam/evergine-standards/.github/actions/send-notification-email@main
+      with:
+        sendgrid-token: ${{ secrets.WAVE_SENDGRID_TOKEN }}
+        from-email: ${{ secrets.EVERGINE_EMAIL }}
+        to-emails: ${{ secrets.EVERGINE_EMAILREPORT_LIST }}
+        subject: Add-on CD publish failed - ${{ github.repository }}
+        additional-info: |
+          Assets project: ${{ inputs.assets-project }}
