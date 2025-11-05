@@ -116,6 +116,11 @@ on:
         required: false
         type: boolean
         default: true
+      runner-os:
+        description: 'GitHub runner OS (e.g., ubuntu-latest, windows-latest)'
+        required: false
+        type: string
+        default: 'ubuntu-latest'
     secrets:
       NUGET_UPLOAD_TOKEN:
         description: 'NuGet.org API key for publishing packages'
@@ -131,7 +136,7 @@ on:
         required: false
 jobs:
   check_xml:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner-os }}
     outputs:
       xml_changed: ${{ steps.compare_hashes.outputs.xml_changed }}
     steps:
@@ -188,7 +193,7 @@ jobs:
   build_and_publish:
     needs: check_xml
     if: needs.check_xml.outputs.xml_changed == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner-os }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5

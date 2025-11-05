@@ -82,10 +82,15 @@ on:
         required: false
         type: string
         default: 'build/scripts/Helpers.ps1'
+      runner-os:
+        description: 'GitHub runner OS (e.g., ubuntu-latest, windows-latest)'
+        required: false
+        type: string
+        default: 'ubuntu-latest'
 
 jobs:
   generate-packages:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner-os }}
     
     steps:
     - name: Checkout repository

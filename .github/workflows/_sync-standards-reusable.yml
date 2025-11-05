@@ -43,10 +43,15 @@ on:
         default: false
         required: false
         type: boolean
+      runner-os:
+        description: 'GitHub runner OS (e.g., ubuntu-latest, windows-latest)'
+        required: false
+        type: string
+        default: 'ubuntu-latest'
 
 jobs:
   sync:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner-os }}
     permissions:
       contents: write      # allow push commits
       pull-requests: write # allow creating pull requests

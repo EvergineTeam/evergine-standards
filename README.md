@@ -286,6 +286,11 @@ The script supports **dependency projects** that need to be built first (to reso
 
 ---
 
+## Note on runner selection in reusable workflows
+
+All reusable workflows in `.github/workflows` support a `runner-os` input, allowing you to select the GitHub Actions runner OS (e.g., `ubuntu-latest`, `windows-latest`) for each job. By default, this is set to `ubuntu-latest`, but you can override it when calling the workflow from your repository if you need a different environment.
+
+---
 
 ## Example usage
 
