@@ -269,6 +269,7 @@ jobs:
 
       - name: Publish NuGet
         if: ${{ success() && inputs.publish-enabled == true }}
+        shell: pwsh
         env:
           token: ${{ secrets.NUGET_UPLOAD_TOKEN }}
         run: |
