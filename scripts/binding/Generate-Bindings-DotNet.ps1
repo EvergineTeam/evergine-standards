@@ -44,9 +44,9 @@ function Get-BuildOutputPath {
         [string]$TargetFramework,
         [string]$RuntimeIdentifier
     )
-    $buildPath = "$GeneratorDir\bin\$BuildConfiguration\$TargetFramework"
+    $buildPath = Join-Path $GeneratorDir "bin" $BuildConfiguration $TargetFramework
     if (-not [string]::IsNullOrWhiteSpace($RuntimeIdentifier)) {
-        $buildPath += "\$RuntimeIdentifier"
+        $buildPath = Join-Path $buildPath $RuntimeIdentifier
     }
     return $buildPath
 }
@@ -99,7 +99,7 @@ if (-not (Test-Path $GeneratorProject)) {
 
 # Compile generator
 LogDebug "START $GeneratorName generator build process"
-dotnet publish -v:$BuildVerbosity -p:Configuration=$BuildConfiguration $GeneratorProject
+dotnet publish -v:$BuildVerbosity -p:Configuration=$BuildConfiguration -r $RuntimeIdentifier $GeneratorProject
 if ($LASTEXITCODE -eq 0) {
     LogDebug "END $GeneratorName generator build process"
 }
