@@ -33,7 +33,7 @@ Describe "Parameter Validation" {
 Describe "Path Construction Logic" {
     Context "With RuntimeIdentifier" {
         It "Should construct correct path with RuntimeIdentifier (script function)" {
-            $generatorDir = "C:\TestProject"
+            $generatorDir = Join-Path ([System.IO.Path]::GetTempPath()) "TestProject"
             $buildConfiguration = "Release"
             $targetFramework = "net8.0"
             $runtimeIdentifier = "win-x64"
@@ -44,7 +44,7 @@ Describe "Path Construction Logic" {
     }
     Context "Without RuntimeIdentifier" {
         It "Should construct correct path without RuntimeIdentifier (script function)" {
-            $generatorDir = "C:\TestProject"
+            $generatorDir = Join-Path ([System.IO.Path]::GetTempPath()) "TestProject"
             $buildConfiguration = "Release"
             $targetFramework = "net8.0"
             $runtimeIdentifier = ""
@@ -53,7 +53,7 @@ Describe "Path Construction Logic" {
             $actualPath | Should -Be $expectedPath
         }
         It "Should handle null RuntimeIdentifier (script function)" {
-            $generatorDir = "C:\TestProject"
+            $generatorDir = Join-Path ([System.IO.Path]::GetTempPath()) "TestProject"
             $buildConfiguration = "Release"
             $targetFramework = "net8.0"
             $runtimeIdentifier = $null
@@ -64,7 +64,7 @@ Describe "Path Construction Logic" {
     }
     Context "Different Target Frameworks" {
         It "Should handle different target frameworks (script function)" {
-            $generatorDir = "C:\TestProject"
+            $generatorDir = Join-Path ([System.IO.Path]::GetTempPath()) "TestProject"
             $buildConfiguration = "Debug"
             $targetFramework = "net9.0"
             $runtimeIdentifier = "linux-x64"
@@ -83,7 +83,7 @@ Describe "Project Name Extraction" {
         $actualName | Should -Be $expectedName
     }
     It "Should handle complex project paths (script function)" {
-        $projectPath = "C:\Projects\MyLibraryGenerator\src\MyLibraryGenerator.csproj"
+        $projectPath = "/projects/MyLibraryGenerator/src/MyLibraryGenerator.csproj"
         $expectedName = "MyLibraryGenerator"
         $actualName = Get-ProjectNameFromPath $projectPath
         $actualName | Should -Be $expectedName
