@@ -5,6 +5,8 @@ obj/
 # Test fixtures build outputs
 tests/fixtures/bin/
 tests/fixtures/obj/
+tests/fixtures/**/bin/
+tests/fixtures/**/obj/
 
 # NuGet packages generated during tests
 nupkgs/
