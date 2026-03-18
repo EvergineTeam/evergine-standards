@@ -37,7 +37,7 @@ Describe "Path Construction Logic" {
             $buildConfiguration = "Release"
             $targetFramework = "net8.0"
             $runtimeIdentifier = "win-x64"
-            $expectedPath = "$generatorDir\bin\$buildConfiguration\$targetFramework\$runtimeIdentifier"
+            $expectedPath = Join-Path $generatorDir "bin" $buildConfiguration $targetFramework $runtimeIdentifier
             $actualPath = Get-BuildOutputPath $generatorDir $buildConfiguration $targetFramework $runtimeIdentifier
             $actualPath | Should -Be $expectedPath
         }
@@ -48,7 +48,7 @@ Describe "Path Construction Logic" {
             $buildConfiguration = "Release"
             $targetFramework = "net8.0"
             $runtimeIdentifier = ""
-            $expectedPath = "$generatorDir\bin\$buildConfiguration\$targetFramework"
+            $expectedPath = Join-Path $generatorDir "bin" $buildConfiguration $targetFramework
             $actualPath = Get-BuildOutputPath $generatorDir $buildConfiguration $targetFramework $runtimeIdentifier
             $actualPath | Should -Be $expectedPath
         }
@@ -57,7 +57,7 @@ Describe "Path Construction Logic" {
             $buildConfiguration = "Release"
             $targetFramework = "net8.0"
             $runtimeIdentifier = $null
-            $expectedPath = "$generatorDir\bin\$buildConfiguration\$targetFramework"
+            $expectedPath = Join-Path $generatorDir "bin" $buildConfiguration $targetFramework
             $actualPath = Get-BuildOutputPath $generatorDir $buildConfiguration $targetFramework $runtimeIdentifier
             $actualPath | Should -Be $expectedPath
         }
@@ -68,7 +68,7 @@ Describe "Path Construction Logic" {
             $buildConfiguration = "Debug"
             $targetFramework = "net9.0"
             $runtimeIdentifier = "linux-x64"
-            $expectedPath = "$generatorDir\bin\$buildConfiguration\$targetFramework\$runtimeIdentifier"
+            $expectedPath = Join-Path $generatorDir "bin" $buildConfiguration $targetFramework $runtimeIdentifier
             $actualPath = Get-BuildOutputPath $generatorDir $buildConfiguration $targetFramework $runtimeIdentifier
             $actualPath | Should -Be $expectedPath
         }
