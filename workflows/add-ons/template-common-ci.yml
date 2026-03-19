@@ -7,6 +7,12 @@ name: CI
 
 on:
   workflow_dispatch:
+    inputs:
+      publish-artifacts:
+        description: 'Publish artifacts'
+        required: false
+        type: boolean
+        default: false
   push:
     branches: [ "main" ]
   pull_request:
@@ -20,9 +26,10 @@ jobs:
       nuget-projects: |                                           # NuGet projects (one per line)
         Source/YourAddon/YourAddon.csproj
         Source/YourAddon.Editor/YourAddon.Editor.csproj
+      version-suffix: "rolling"                                   # Add preview suffix to packages
       build-configuration: "Release"                              # Build configuration (Release, Debug, etc.)
       dotnet-version: "8.0.x"                                     # .NET version to use
-      upload-artifacts: false                                      # Upload packages as workflow artifacts
+      upload-artifacts: ${{ inputs.publish-artifacts || false }}  # Upload packages as workflow artifacts
       revision: ${{ github.run_number }}                          # Revision for date-based version
 
 # Tips:

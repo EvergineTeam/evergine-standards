@@ -286,6 +286,11 @@ The script supports **dependency projects** that need to be built first (to reso
 
 ---
 
+## Note on runner selection in reusable workflows
+
+All reusable workflows in `.github/workflows` support a `runner-os` input, allowing you to select the GitHub Actions runner OS (e.g., `ubuntu-latest`, `windows-latest`) for each job. By default, this is set to `ubuntu-latest`, but you can override it when calling the workflow from your repository if you need a different environment.
+
+---
 
 ## Example usage
 
@@ -784,3 +789,43 @@ This simulates the synchronization and shows which files would be processed with
 
 > **Maintainers:**  
 > This repository should remain minimal and versioned carefully — avoid including secrets, credentials, or environment-specific files.
+
+
+## Development and Versioning Workflow
+
+### How to create a new version branch (`v2`, `v3`, ...)
+
+1. **Update internal `uses:` references:**
+  - On the `main` branch, replace all `@main` with `@v2` (or the appropriate version) in all `uses:` fields for actions and reusable workflows.
+
+2. **Create the version branch:**
+  - Before committing, create the new branch:
+    ```sh
+    git checkout -b v2
+    git add .
+    git commit -m "Update internal uses to @v2 for stable release"
+    git push origin v2
+    ```
+
+3. **(Optional) Revert changes in `main`:**
+  - If you want `main` to keep using `@main` for development, switch back to `main` and discard the changes.
+
+4. **Hotfixes:**
+  - Apply hotfixes directly to the version branch (`v2`). If needed, you can merge them back into `main` later.
+
+### How should consumer repositories reference this repo?
+
+- **For maximum stability:**
+  - Consumer repositories should always use the stable branch/tag in their `uses:`:
+   ```yaml
+   uses: EvergineTeam/evergine-standards/.github/workflows/addon-simple-cd.yml@v2
+   ```
+- **For development or testing:**
+  - Only in special cases should you point to `@main` or a feature branch. This is not recommended for production.
+
+### Why use `v2`, `v3`, ... branches/tags?
+- This is the standard convention for GitHub Actions.
+- It allows you to introduce breaking changes in `main` without affecting consumers.
+- Consumers can migrate to new versions when they choose.
+
+> **Tip:** Before creating the version branch, you can use a script or search to update all `@main` to `@v2` in workflows and actions.

@@ -27,9 +27,9 @@ jobs:
       version-suffix: "preview"                                       # Add preview suffix to packages
       build-configuration: "Release"                                  # Build configuration
       dotnet-version: "8.0.x"                                        # .NET version
-      storage-account-name: "everginestudio"                   # Azure Storage account
-      storage-container-name: "pkg-preview"                              # Azure Storage container
-      publish-packages: ${{ true && !inputs.skip-assets-publishing }}   # Publish both NuGet packages and .wepkg assets
+      storage-account-name: "everginestudio"                          # Azure Storage account
+      storage-container-name: "pkg-preview"                          # Azure Storage container
+      publish-packages: ${{ !inputs.skip-assets-publishing }}        # Publish both NuGet packages and .wepkg assets
       enable-email-notifications: true                               # Send email on failure
     secrets:
       NUGET_UPLOAD_TOKEN: ${{ secrets.NUGET_UPLOAD_TOKEN }}          # NuGet.org API key

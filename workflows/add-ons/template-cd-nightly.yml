@@ -30,7 +30,7 @@ jobs:
 
   cd:
     needs: check_changes
-    if: ${{ needs.check_changes.outputs.has_changes == 'true' || inputs.force-execution == true }}
+    if: ${{ (needs.check_changes.outputs.has_changes == 'true' || inputs.force-execution == true) && github.ref == 'refs/heads/main' }}
     uses: EvergineTeam/evergine-standards/.github/workflows/addon-simple-cd.yml@main
     with:
       assets-project: "YourAddon.Assets/YourAddon.Assets.csproj"      # Path to your assets .csproj
@@ -41,9 +41,9 @@ jobs:
       version-suffix: "nightly"                                       # Add nightly suffix to packages
       build-configuration: "Release"                                  # Build configuration
       dotnet-version: "8.0.x"                                        # .NET version
-      storage-account-name: "everginestudio"                   # Azure Storage account
-      storage-container-name: "pkg-nightly"                              # Azure Storage container
-      publish-packages: ${{ true && !inputs.skip-assets-publishing }}           # Publish only if skip-upload is false
+      storage-account-name: "everginestudio"                         # Azure Storage account
+      storage-container-name: "pkg-nightly"                          # Azure Storage container
+      publish-packages: ${{ !inputs.skip-assets-publishing }}        # Publish only if skip-upload is false
       enable-email-notifications: true                               # Send email on failure
     secrets:
       NUGET_UPLOAD_TOKEN: ${{ secrets.NUGET_UPLOAD_TOKEN }}          # NuGet.org API key

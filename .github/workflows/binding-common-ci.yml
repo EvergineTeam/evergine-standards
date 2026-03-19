@@ -98,9 +98,14 @@ on:
         required: false
         type: string
         default: '8.x'
+      runner-os:
+        description: 'GitHub runner OS (e.g., ubuntu-latest, windows-latest)'
+        required: false
+        type: string
+        default: 'ubuntu-latest'
 jobs:
   build_and_generate:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner-os }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5

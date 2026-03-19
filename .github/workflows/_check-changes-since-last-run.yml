@@ -11,6 +11,11 @@ on:
         description: 'Filename of the workflow to check (e.g., "cd-nightly.yml")'
         required: true
         type: string
+      runner-os:
+        description: 'GitHub runner OS (e.g., ubuntu-latest, windows-latest)'
+        required: false
+        type: string
+        default: 'ubuntu-latest'
     outputs:
       has_changes:
         description: 'Whether there are changes since the last successful run'
@@ -24,7 +29,7 @@ on:
 
 jobs:
   check_changes:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner-os }}
     outputs:
       has_changes: ${{ steps.changes_check.outputs.has_changes }}
       last_sha: ${{ steps.last_commit.outputs.last_sha }}

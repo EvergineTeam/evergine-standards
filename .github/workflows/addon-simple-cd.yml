@@ -116,6 +116,11 @@ on:
         required: false
         type: string
         default: ''
+      runner-os:
+        description: 'GitHub runner OS (e.g., ubuntu-latest, windows-latest)'
+        required: false
+        type: string
+        default: 'ubuntu-latest'
     secrets:
       NUGET_UPLOAD_TOKEN:
         description: 'NuGet.org API key for publishing packages'
@@ -135,7 +140,7 @@ on:
 
 jobs:
   build_and_publish:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner-os }}
     
     steps:
     - name: Checkout repository
