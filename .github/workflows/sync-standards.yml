@@ -13,7 +13,7 @@ on:
         required: false
       ref:
         description: "Branch/tag/commit of standards"
-        default: "v2"
+        default: "main"
         required: false
       target_branch:
         description: "Target branch to apply changes"
