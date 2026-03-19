@@ -144,7 +144,7 @@ jobs:
           nuget-version: ${{ inputs.nuget-version }}
 
       - name: Generate bindings
-        uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-bindings-dotnet@v2
+        uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-bindings-dotnet@main
         with:
           script-path: ${{ inputs.bindings-script-path }}
           generator-project: ${{ inputs.generator-project }}
@@ -156,7 +156,7 @@ jobs:
           restore-workloads: ${{ inputs.restore-workloads }}
 
       - name: Generate NuGets
-        uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-nugets-dotnet@v2
+        uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-nugets-dotnet@main
         with:
           script-path: ${{ inputs.nugets-script-path }}
           helpers-path: ${{ inputs.helpers-path }}
@@ -187,7 +187,7 @@ jobs:
 
       - name: Send failure notification
         if: ${{ failure() && inputs.enable-email-notifications == true }}
-        uses: EvergineTeam/evergine-standards/.github/actions/send-notification-email@v2
+        uses: EvergineTeam/evergine-standards/.github/actions/send-notification-email@main
         with:
           sendgrid-token: ${{ secrets.WAVE_SENDGRID_TOKEN }}
           from-email: ${{ secrets.EVERGINE_EMAIL }}

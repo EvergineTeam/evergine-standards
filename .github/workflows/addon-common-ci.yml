@@ -102,7 +102,7 @@ jobs:
         dotnet-version: ${{ inputs.dotnet-version }}
 
     - name: Generate NuGet packages
-      uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-nugets-dotnet@v2
+      uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-nugets-dotnet@main
       with:
         script-path: ${{ inputs.nugets-script-path }}
         helpers-path: ${{ inputs.helpers-path }}
@@ -117,7 +117,7 @@ jobs:
         output-folder: 'nupkgs'
 
     - name: Generate add-on assets
-      uses: EvergineTeam/evergine-standards/.github/actions/addon-generate-assets@v2
+      uses: EvergineTeam/evergine-standards/.github/actions/addon-generate-assets@main
       with:
         script-path: ${{ inputs.assets-package-script-path }}
         helpers-path: ${{ inputs.helpers-path }}

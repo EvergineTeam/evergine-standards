@@ -20,7 +20,7 @@ on:
 
 jobs:
   ci:
-    uses: EvergineTeam/evergine-standards/.github/workflows/binding-common-ci.yml@v2
+    uses: EvergineTeam/evergine-standards/.github/workflows/binding-common-ci.yml@main
     with:
       generator-project: "YourBindingGen/YourBindingGen/YourBindingGen.csproj"  # Path to your generator .csproj
       generator-name: "YourBinding"                # Name of your generator executable

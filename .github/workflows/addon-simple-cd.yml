@@ -152,7 +152,7 @@ jobs:
         dotnet-version: ${{ inputs.dotnet-version }}
 
     - name: Generate NuGet packages
-      uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-nugets-dotnet@v2
+      uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-nugets-dotnet@main
       with:
         script-path: ${{ inputs.nugets-script-path }}
         helpers-path: ${{ inputs.helpers-path }}
@@ -169,7 +169,7 @@ jobs:
         symbols-format: ${{ inputs.symbols-format }}
 
     - name: Generate add-on assets
-      uses: EvergineTeam/evergine-standards/.github/actions/addon-generate-assets@v2
+      uses: EvergineTeam/evergine-standards/.github/actions/addon-generate-assets@main
       with:
         script-path: ${{ inputs.assets-package-script-path }}
         helpers-path: ${{ inputs.helpers-path }}
@@ -224,7 +224,7 @@ jobs:
 
     - name: Send failure notification
       if: ${{ failure() && inputs.enable-email-notifications == true }}
-      uses: EvergineTeam/evergine-standards/.github/actions/send-notification-email@v2
+      uses: EvergineTeam/evergine-standards/.github/actions/send-notification-email@main
       with:
         sendgrid-token: ${{ secrets.WAVE_SENDGRID_TOKEN }}
         from-email: ${{ secrets.EVERGINE_EMAIL }}
