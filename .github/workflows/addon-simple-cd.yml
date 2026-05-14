@@ -60,6 +60,11 @@ on:
         required: false
         type: string
         default: 'nupkgs'
+      nuget-source:
+        description: 'NuGet source for publishing packages'
+        required: false
+        type: string
+        default: 'https://api.nuget.org/v3/index.json'
       version-token:
         description: 'Version token to replace in .wespec files'
         required: false
@@ -212,7 +217,7 @@ jobs:
         token: ${{ secrets.NUGET_UPLOAD_TOKEN }}
       run: |
         cd ${{ inputs.nuget-output-folder }}
-        dotnet nuget push "**/*.nupkg" --skip-duplicate --no-symbols -k "$env:token" -s https://api.nuget.org/v3/index.json
+        dotnet nuget push "**/*.nupkg" --skip-duplicate --no-symbols -k "$env:token" -s ${{ inputs.nuget-source }}
       shell: pwsh
 
     - name: Upload add-on assets to Azure Storage

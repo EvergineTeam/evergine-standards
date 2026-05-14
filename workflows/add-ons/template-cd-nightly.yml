@@ -37,6 +37,7 @@ jobs:
       nuget-projects: |                                               # NuGet projects (one per line)
         Source/YourAddon/YourAddon.csproj
         Source/YourAddon.Editor/YourAddon.Editor.csproj
+      nuget-source: "https://pkgs.dev.azure.com/plainconcepts/Evergine.Nightly/_packaging/Evergine.NightlyBuilds/nuget/v3/index.json" # NuGet source for publishing packages
       revision: ${{ github.run_number }}                              # Use run number for nightly versioning
       version-suffix: "nightly"                                       # Add nightly suffix to packages
       build-configuration: "Release"                                  # Build configuration
@@ -46,8 +47,8 @@ jobs:
       publish-packages: ${{ !inputs.skip-assets-publishing }}        # Publish only if skip-upload is false
       enable-email-notifications: true                               # Send email on failure
     secrets:
-      NUGET_UPLOAD_TOKEN: ${{ secrets.NUGET_UPLOAD_TOKEN }}          # NuGet.org API key
-      AZURE_STORAGE_SAS_TOKEN: ${{ secrets.AZURE_STORAGE_SAS_TOKEN }} # Azure Storage SAS token
+      NUGET_UPLOAD_TOKEN: ${{ secrets.EVERGINE_NUGETORG_TOKEN }}      # NuGet feed API key
+      AZURE_STORAGE_SAS_TOKEN: ${{ secrets.PUBLISH_NIGHTLY_BLOB_CONTAINER_SAS_TOKEN }} # Azure Storage SAS token
       WAVE_SENDGRID_TOKEN: ${{ secrets.WAVE_SENDGRID_TOKEN }}        # SendGrid for email notifications
       EVERGINE_EMAILREPORT_LIST: ${{ secrets.EVERGINE_EMAILREPORT_LIST }}
       EVERGINE_EMAIL: ${{ secrets.EVERGINE_EMAIL }}

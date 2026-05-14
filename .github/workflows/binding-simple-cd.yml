@@ -103,6 +103,11 @@ on:
         required: false
         type: string
         default: '6.x'
+      nuget-source:
+        description: 'NuGet source for publishing packages'
+        required: false
+        type: string
+        default: 'https://api.nuget.org/v3/index.json'
       enable-email-notifications:
         description: 'Enable email notifications on failure'
         required: false
@@ -183,7 +188,7 @@ jobs:
         run: |
           cd ${{ inputs.output-folder }}
           ls *.nupkg
-          dotnet nuget push "**/*.nupkg" --skip-duplicate --no-symbols -k "$env:token" -s https://api.nuget.org/v3/index.json
+          dotnet nuget push "**/*.nupkg" --skip-duplicate --no-symbols -k "$env:token" -s ${{ inputs.nuget-source }}
 
       - name: Send failure notification
         if: ${{ failure() && inputs.enable-email-notifications == true }}
