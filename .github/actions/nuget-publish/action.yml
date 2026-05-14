@@ -76,6 +76,9 @@ runs:
           $sourceName = "evergine-azure-artifacts-publish"
           $tempConfig = Join-Path ([System.IO.Path]::GetTempPath()) "nuget-publish-$([System.Guid]::NewGuid()).config"
 
+          # dotnet nuget add source --configfile requires the file to already exist
+          '<?xml version="1.0" encoding="utf-8"?><configuration></configuration>' | Set-Content $tempConfig -Encoding utf8
+
           try {
             dotnet nuget add source $sourceUrl `
               --name $sourceName `
