@@ -14,10 +14,6 @@ inputs:
   auth-token:
     description: 'Token used for publishing (NuGet API key or Azure Artifacts PAT)'
     required: true
-  dotnet-version:
-    description: '.NET SDK version, required when publishing to Azure Artifacts'
-    required: false
-    default: ''
   package-pattern:
     description: 'Glob pattern for packages to publish'
     required: false
@@ -34,17 +30,6 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    # For Azure Artifacts: setup-dotnet with dotnet-version + source-url installs the credential
-    # provider and registers the feed. NUGET_AUTH_TOKEN is then picked up automatically on push.
-    - name: Configure Azure Artifacts credentials
-      if: ${{ (contains(inputs.source-url, 'dev.azure.com') || contains(inputs.source-url, 'visualstudio.com')) && inputs.dotnet-version != '' }}
-      uses: actions/setup-dotnet@v5
-      with:
-        dotnet-version: ${{ inputs.dotnet-version }}
-        source-url: ${{ inputs.source-url }}
-      env:
-        NUGET_AUTH_TOKEN: ${{ inputs.auth-token }}
-
     - name: Publish packages
       shell: pwsh
       env:
@@ -78,17 +63,35 @@ runs:
         $isAzureArtifacts = $sourceUrl -match 'dev\.azure\.com|visualstudio\.com'
 
         $pushPath = Join-Path $packagesFolder $packagePattern
-        $pushArgs = @("nuget", "push", $pushPath, "--source", $sourceUrl)
+        $pushArgs = @("nuget", "push", $pushPath)
 
         if ($skipDuplicate) { $pushArgs += "--skip-duplicate" }
         if ($noSymbols)     { $pushArgs += "--no-symbols" }
 
         if ($isAzureArtifacts) {
-          # Credentials were configured by setup-dotnet above via NUGET_AUTH_TOKEN.
-          # Azure Artifacts requires a non-empty --api-key; the literal value is ignored.
-          $pushArgs += @("--api-key", "AzureArtifacts")
-        } else {
-          $pushArgs += @("--api-key", $authToken)
-        }
+          # Register the feed under a controlled, valid name in a temp nuget.config so we never
+          # touch the repo's own nuget.config (which may have source names with spaces that would
+          # cause 'dotnet nuget auth' to fail). --store-password-in-clear-text is required on
+          # Linux agents where no OS credential store is available.
+          $sourceName = "evergine-azure-artifacts-publish"
+          $tempConfig = Join-Path ([System.IO.Path]::GetTempPath()) "nuget-publish-$([System.Guid]::NewGuid()).config"
 
-        dotnet @pushArgs
+          try {
+            dotnet nuget add source $sourceUrl `
+              --name $sourceName `
+              --username "github-actions" `
+              --password $authToken `
+              --store-password-in-clear-text `
+              --configfile $tempConfig
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+            $pushArgs += @("--source", $sourceName, "--api-key", "AzureArtifacts", "--configfile", $tempConfig)
+            dotnet @pushArgs
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          } finally {
+            Remove-Item $tempConfig -Force -ErrorAction SilentlyContinue
+          }
+        } else {
+          $pushArgs += @("--source", $sourceUrl, "--api-key", $authToken)
+          dotnet @pushArgs
+        }
