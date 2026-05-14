@@ -14,6 +14,10 @@ inputs:
   auth-token:
     description: 'Token used for publishing (NuGet API key or Azure Artifacts PAT)'
     required: true
+  dotnet-version:
+    description: '.NET SDK version, required when publishing to Azure Artifacts'
+    required: false
+    default: ''
   package-pattern:
     description: 'Glob pattern for packages to publish'
     required: false
@@ -30,12 +34,13 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    # For Azure Artifacts: setup-dotnet with source-url installs the Azure Artifacts Credential Provider
-    # and configures auth via NUGET_AUTH_TOKEN, which dotnet nuget push then picks up automatically.
+    # For Azure Artifacts: setup-dotnet with dotnet-version + source-url installs the credential
+    # provider and registers the feed. NUGET_AUTH_TOKEN is then picked up automatically on push.
     - name: Configure Azure Artifacts credentials
-      if: ${{ contains(inputs.source-url, 'dev.azure.com') || contains(inputs.source-url, 'visualstudio.com') }}
+      if: ${{ (contains(inputs.source-url, 'dev.azure.com') || contains(inputs.source-url, 'visualstudio.com')) && inputs.dotnet-version != '' }}
       uses: actions/setup-dotnet@v5
       with:
+        dotnet-version: ${{ inputs.dotnet-version }}
         source-url: ${{ inputs.source-url }}
       env:
         NUGET_AUTH_TOKEN: ${{ inputs.auth-token }}
@@ -72,15 +77,15 @@ runs:
 
         $isAzureArtifacts = $sourceUrl -match 'dev\.azure\.com|visualstudio\.com'
 
-        # Build common push arguments
-        $pushArgs = @("nuget", "push", (Join-Path $packagesFolder $packagePattern), "--source", $sourceUrl)
+        $pushPath = Join-Path $packagesFolder $packagePattern
+        $pushArgs = @("nuget", "push", $pushPath, "--source", $sourceUrl)
 
         if ($skipDuplicate) { $pushArgs += "--skip-duplicate" }
         if ($noSymbols)     { $pushArgs += "--no-symbols" }
 
         if ($isAzureArtifacts) {
-          # Credentials are already configured by the setup-dotnet step above via NUGET_AUTH_TOKEN.
-          # Azure Artifacts accepts any non-empty string as api-key when the credential provider is active.
+          # Credentials were configured by setup-dotnet above via NUGET_AUTH_TOKEN.
+          # Azure Artifacts requires a non-empty --api-key; the literal value is ignored.
           $pushArgs += @("--api-key", "AzureArtifacts")
         } else {
           $pushArgs += @("--api-key", $authToken)

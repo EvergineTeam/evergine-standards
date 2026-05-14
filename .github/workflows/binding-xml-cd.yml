@@ -279,6 +279,7 @@ jobs:
           packages-folder: ${{ inputs.output-folder }}
           source-url: ${{ inputs.nuget-source }}
           auth-token: ${{ secrets.NUGET_UPLOAD_TOKEN }}
+          dotnet-version: ${{ inputs.dotnet-version }}
           package-pattern: "**/*.nupkg"
           skip-duplicate: 'true'
           no-symbols: 'true'
