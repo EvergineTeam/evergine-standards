@@ -1,0 +1,89 @@
+name: 'Publish NuGet Packages'
+description: 'Publishes NuGet packages to NuGet.org or Azure Artifacts with feed-specific authentication.'
+author: 'Evergine Team'
+
+inputs:
+  packages-folder:
+    description: 'Folder containing packages to publish'
+    required: false
+    default: 'nupkgs'
+  source-url:
+    description: 'NuGet feed source URL'
+    required: false
+    default: 'https://api.nuget.org/v3/index.json'
+  auth-token:
+    description: 'Token used for publishing (NuGet API key or Azure Artifacts PAT)'
+    required: true
+  package-pattern:
+    description: 'Glob pattern for packages to publish'
+    required: false
+    default: '**/*.nupkg'
+  skip-duplicate:
+    description: 'Skip packages that already exist in the feed'
+    required: false
+    default: 'true'
+  no-symbols:
+    description: 'Do not publish symbols packages'
+    required: false
+    default: 'true'
+
+runs:
+  using: 'composite'
+  steps:
+    # For Azure Artifacts: setup-dotnet with source-url installs the Azure Artifacts Credential Provider
+    # and configures auth via NUGET_AUTH_TOKEN, which dotnet nuget push then picks up automatically.
+    - name: Configure Azure Artifacts credentials
+      if: ${{ contains(inputs.source-url, 'dev.azure.com') || contains(inputs.source-url, 'visualstudio.com') }}
+      uses: actions/setup-dotnet@v5
+      with:
+        source-url: ${{ inputs.source-url }}
+      env:
+        NUGET_AUTH_TOKEN: ${{ inputs.auth-token }}
+
+    - name: Publish packages
+      shell: pwsh
+      env:
+        AUTH_TOKEN: ${{ inputs.auth-token }}
+      run: |
+        $ErrorActionPreference = 'Stop'
+
+        $packagesFolder = "${{ inputs.packages-folder }}"
+        $sourceUrl = "${{ inputs.source-url }}"
+        $authToken = "$env:AUTH_TOKEN"
+        $packagePattern = "${{ inputs.package-pattern }}"
+        $skipDuplicate = [System.Convert]::ToBoolean("${{ inputs.skip-duplicate }}")
+        $noSymbols = [System.Convert]::ToBoolean("${{ inputs.no-symbols }}")
+
+        if (-not (Test-Path $packagesFolder)) {
+          Write-Error "Packages folder not found: $packagesFolder"
+          exit 1
+        }
+
+        if ([string]::IsNullOrWhiteSpace($authToken)) {
+          Write-Error "Input 'auth-token' is required and cannot be empty."
+          exit 1
+        }
+
+        $packages = Get-ChildItem -Path $packagesFolder -Filter *.nupkg -Recurse -File
+        if ($packages.Count -eq 0) {
+          Write-Error "No .nupkg files found under: $packagesFolder"
+          exit 1
+        }
+
+        $isAzureArtifacts = $sourceUrl -match 'dev\.azure\.com|visualstudio\.com'
+
+        # Build common push arguments
+        $pushArgs = @("nuget", "push", (Join-Path $packagesFolder $packagePattern), "--source", $sourceUrl)
+
+        if ($skipDuplicate) { $pushArgs += "--skip-duplicate" }
+        if ($noSymbols)     { $pushArgs += "--no-symbols" }
+
+        if ($isAzureArtifacts) {
+          # Credentials are already configured by the setup-dotnet step above via NUGET_AUTH_TOKEN.
+          # Azure Artifacts accepts any non-empty string as api-key when the credential provider is active.
+          $pushArgs += @("--api-key", "AzureArtifacts")
+        } else {
+          $pushArgs += @("--api-key", $authToken)
+        }
+
+        dotnet @pushArgs

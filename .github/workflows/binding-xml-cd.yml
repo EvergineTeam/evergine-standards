@@ -128,7 +128,7 @@ on:
         default: 'ubuntu-latest'
     secrets:
       NUGET_UPLOAD_TOKEN:
-        description: 'NuGet.org API key for publishing packages'
+        description: 'NuGet publish credential (NuGet API key or Azure Artifacts PAT)'
         required: true
       WAVE_SENDGRID_TOKEN:
         description: 'SendGrid API key for email notifications'
@@ -274,13 +274,14 @@ jobs:
 
       - name: Publish NuGet
         if: ${{ success() && inputs.publish-enabled == true }}
-        shell: pwsh
-        env:
-          token: ${{ secrets.NUGET_UPLOAD_TOKEN }}
-        run: |
-          cd ${{ inputs.output-folder }}
-          ls *.nupkg
-          dotnet nuget push "**/*.nupkg" --skip-duplicate --no-symbols -k "$env:token" -s ${{ inputs.nuget-source }}
+        uses: EvergineTeam/evergine-standards/.github/actions/nuget-publish@v2
+        with:
+          packages-folder: ${{ inputs.output-folder }}
+          source-url: ${{ inputs.nuget-source }}
+          auth-token: ${{ secrets.NUGET_UPLOAD_TOKEN }}
+          package-pattern: "**/*.nupkg"
+          skip-duplicate: 'true'
+          no-symbols: 'true'
 
       - name: Send failure notification
         if: ${{ failure() && inputs.enable-email-notifications == true }}

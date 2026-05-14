@@ -47,7 +47,7 @@ jobs:
       publish-packages: ${{ !inputs.skip-assets-publishing }}        # Publish only if skip-upload is false
       enable-email-notifications: true                               # Send email on failure
     secrets:
-      NUGET_UPLOAD_TOKEN: ${{ secrets.EVERGINE_NUGETORG_TOKEN }}      # NuGet feed API key
+      NUGET_UPLOAD_TOKEN: ${{ secrets.EVERGINE_NIGHTLY_FEED_PAT }}      # NuGet feed API key
       AZURE_STORAGE_SAS_TOKEN: ${{ secrets.PUBLISH_NIGHTLY_BLOB_CONTAINER_SAS_TOKEN }} # Azure Storage SAS token
       WAVE_SENDGRID_TOKEN: ${{ secrets.WAVE_SENDGRID_TOKEN }}        # SendGrid for email notifications
       EVERGINE_EMAILREPORT_LIST: ${{ secrets.EVERGINE_EMAILREPORT_LIST }}
