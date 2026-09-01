@@ -14,14 +14,19 @@ param(
 
 # Import Pester module
 $PesterVersionRequired = "5.7.1"
-$PesterModule = Get-Module -Name Pester -ListAvailable | Where-Object { $_.Version -ge [version]$PesterVersionRequired } | Sort-Object Version -Descending | Select-Object -First 1
+# An upper bound as well as a floor: Pester 6 removed Invoke-Pester's legacy
+# -OutputFile and -OutputFormat parameters, which the else branch below still
+# passes. Without this, the first machine to have Pester 6 installed fails with
+# "A parameter cannot be found that matches parameter name 'OutputFormat'".
+$PesterVersionMaximum = "5.99.99"
+$PesterModule = Get-Module -Name Pester -ListAvailable | Where-Object { $_.Version -ge [version]$PesterVersionRequired -and $_.Version -le [version]$PesterVersionMaximum } | Sort-Object Version -Descending | Select-Object -First 1
 
 if (-not $PesterModule) {
-    Write-Warning "Pester $PesterVersionRequired or higher not found. Installing latest Pester..."
+    Write-Warning "Pester $PesterVersionRequired..$PesterVersionMaximum not found. Installing..."
     try {
-        Install-Module -Name Pester -Force -SkipPublisherCheck -Scope CurrentUser -AllowClobber
+        Install-Module -Name Pester -MaximumVersion $PesterVersionMaximum -Force -SkipPublisherCheck -Scope CurrentUser -AllowClobber
         Write-Host "Pester installed successfully." -ForegroundColor Green
-        $PesterModule = Get-Module -Name Pester -ListAvailable | Sort-Object Version -Descending | Select-Object -First 1
+        $PesterModule = Get-Module -Name Pester -ListAvailable | Where-Object { $_.Version -le [version]$PesterVersionMaximum } | Sort-Object Version -Descending | Select-Object -First 1
     }
     catch {
         Write-Error "Failed to install Pester: $($_.Exception.Message)"
