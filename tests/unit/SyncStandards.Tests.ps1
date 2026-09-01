@@ -299,3 +299,115 @@ Describe "Schema v2 Groups Processing" {
         }
     }
 }
+
+Describe "Expand-Tokens Function" {
+    It "Should replace a known token" {
+        Expand-Tokens "Copyright (c) {{YEAR}} Evergine" @{ YEAR = 2027 } |
+            Should -Be "Copyright (c) 2027 Evergine"
+    }
+
+    It "Should replace every occurrence of a token" {
+        Expand-Tokens "{{YEAR}}-{{YEAR}}" @{ YEAR = 2027 } | Should -Be "2027-2027"
+    }
+
+    It "Should leave text without tokens untouched" {
+        $text = "Copyright (c) 2026 Evergine"
+        Expand-Tokens $text @{ YEAR = 2027 } | Should -Be $text
+    }
+
+    It "Should leave unknown tokens in place" {
+        Expand-Tokens "{{YEAR}} {{HOLDER}}" @{ YEAR = 2027 } | Should -Be "2027 {{HOLDER}}"
+    }
+
+    It "Should accept an empty token table" {
+        Expand-Tokens "{{YEAR}}" @{} | Should -Be "{{YEAR}}"
+    }
+}
+
+Describe "Expand-Placeholders Function" {
+    BeforeAll {
+        function ConvertTo-Utf8([string]$text, [bool]$withBom) {
+            $body = [System.Text.Encoding]::UTF8.GetBytes($text)
+            if ($withBom) { return [byte[]]((0xEF, 0xBB, 0xBF) + $body) }
+            return $body
+        }
+
+        function Get-Utf8String([byte[]]$bytes) {
+            $offset = if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) { 3 } else { 0 }
+            return [System.Text.Encoding]::UTF8.GetString($bytes, $offset, $bytes.Length - $offset)
+        }
+    }
+
+    It "Should substitute in a file without a BOM and not add one" {
+        $result = Expand-Placeholders (ConvertTo-Utf8 "Copyright (c) {{YEAR}} Evergine" $false) @{ YEAR = 2027 }
+
+        $result[0] | Should -Not -Be 0xEF
+        Get-Utf8String $result | Should -Be "Copyright (c) 2027 Evergine"
+    }
+
+    It "Should keep the BOM a file arrived with" {
+        $result = Expand-Placeholders (ConvertTo-Utf8 "Copyright (c) {{YEAR}} Evergine" $true) @{ YEAR = 2027 }
+
+        $result[0] | Should -Be 0xEF
+        $result[1] | Should -Be 0xBB
+        $result[2] | Should -Be 0xBF
+        Get-Utf8String $result | Should -Be "Copyright (c) 2027 Evergine"
+    }
+
+    It "Should preserve LF line endings" {
+        $result = Expand-Placeholders (ConvertTo-Utf8 "MIT`n`n{{YEAR}}`n" $false) @{ YEAR = 2027 }
+
+        Get-Utf8String $result | Should -Be "MIT`n`n2027`n"
+    }
+
+    It "Should preserve CRLF line endings" {
+        $result = Expand-Placeholders (ConvertTo-Utf8 "MIT`r`n`r`n{{YEAR}}`r`n" $false) @{ YEAR = 2027 }
+
+        Get-Utf8String $result | Should -Be "MIT`r`n`r`n2027`r`n"
+    }
+
+    It "Should return byte-identical content when there is nothing to substitute" {
+        # The guarantee that marking an entry "substitute" cannot corrupt a file that happens to
+        # carry no tokens.
+        $original = ConvertTo-Utf8 "MIT`r`nCopyright (c) 2026 Evergine`r`n" $true
+        $result = Expand-Placeholders $original @{ YEAR = 2027 }
+
+        ($result -join ',') | Should -Be ($original -join ',')
+    }
+}
+
+Describe "Manifest substitute Flag" {
+    It "Should default to false when the entry does not declare it" {
+        $file = [PSCustomObject]@{ src = "assets/nuget-icon.png"; dst = "assets/nuget-icon.png" }
+
+        $substitute = if ($file.PSObject.Properties.Name -contains 'substitute') { [bool]$file.substitute } else { $false }
+
+        $substitute | Should -Be $false
+    }
+
+    It "Should honour the flag when the entry declares it" {
+        $manifestObj = [PSCustomObject]@{
+            schema        = "2"
+            defaultGroups = @("core")
+            groups        = [PSCustomObject]@{
+                core = @(
+                    [PSCustomObject]@{ src = "templates/LICENSE"; dst = "LICENSE"; substitute = $true }
+                    [PSCustomObject]@{ src = "assets/nuget-icon.png"; dst = "assets/nuget-icon.png" }
+                )
+            }
+        }
+
+        # Simulate the script's entry-building loop
+        $entries = @()
+        foreach ($file in $manifestObj.groups.core) {
+            $overwrite = if ($file.PSObject.Properties.Name -contains 'overwrite') { $file.overwrite } else { "always" }
+            $substitute = if ($file.PSObject.Properties.Name -contains 'substitute') { [bool]$file.substitute } else { $false }
+            $entries += [pscustomobject]@{ src = $file.src; dst = $file.dst; overwrite = $overwrite; substitute = $substitute }
+        }
+
+        $entries.Count | Should -Be 2
+        $entries[0].src | Should -Be "templates/LICENSE"
+        $entries[0].substitute | Should -Be $true
+        $entries[1].substitute | Should -Be $false
+    }
+}

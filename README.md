@@ -505,6 +505,7 @@ Optional parameters:
 | `-Ref` | Git reference (branch, tag, or SHA; default: `main`) |
 | `-SourcePath` | Local folder instead of remote source (for local testing) |
 | `-DryRun` | Prints actions without writing files |
+| `-Year` | Value of the `{{YEAR}}` token (default: the current year) |
 
 The script:
 1. Loads the `sync-manifest.json`.
@@ -593,6 +594,27 @@ The manifest defines which files are distributed to all repositories using schem
 - `overwrite`:  
   - `"always"` → Replace existing files (default).  
   - `"ifMissing"` → Create only if the file does not exist (used for local customization).
+- `substitute`:  
+  - `true` → Expand `{{TOKEN}}` placeholders in the file before writing it.  
+  - `false` → Copy the file byte for byte (default).
+
+### Placeholders
+
+Entries marked `"substitute": true` are expanded before being written. Every other entry is copied
+byte for byte, which is what keeps the sync idempotent and its diffs readable — expanding
+everything would put binary files such as `assets/nuget-icon.png` at risk for no gain.
+
+| Token | Value |
+|-------|-------|
+| `{{YEAR}}` | The current year, or whatever `-Year` is given |
+
+A byte order mark and the file's line endings are preserved. A file that carries no tokens comes
+through byte-identical even when its entry is marked `substitute`.
+
+`LICENSE` is distributed this way: the source is `templates/LICENSE`, which holds
+`Copyright (c) {{YEAR}} Evergine`, so the year no longer has to be edited by hand once a year in
+every consuming repository. This repository's own `LICENSE` stays a real licence file rather than a
+template.
 
 ---
 

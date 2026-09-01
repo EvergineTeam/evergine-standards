@@ -20,6 +20,7 @@ param(
     [string]$SourcePath,                           # e.g., ../evergine-standards-snapshot# Tag/branch/SHA (e.g., v1)
 
     # Common settings
+    [int]$Year = (Get-Date).Year,                # {{YEAR}} token value; a parameter so tests can pin it
     [string]$Manifest = "sync-manifest.json",    # Manifest filename
     [string]$Root = (Resolve-Path ".").Path,     # Target base path (usually repo root)
     [string]$OverrideFile = ".standards.override.json",
@@ -82,6 +83,45 @@ function Get-SourceBytes([string]$path) {
             }
         }
     }
+}
+
+# ---------------------------
+# Placeholder substitution
+# ---------------------------
+
+# Tokens are expanded only in manifest entries marked "substitute": true. Every other file is
+# copied byte for byte, which is what keeps the sync idempotent and its diffs readable; expanding
+# everything would put the icon and the PowerShell helpers at risk for no gain.
+function Expand-Tokens([string]$text, [hashtable]$tokens) {
+    foreach ($name in $tokens.Keys) {
+        $text = $text.Replace("{{$name}}", [string]$tokens[$name])
+    }
+
+    return $text
+}
+
+$script:Utf8Bom = [byte[]](0xEF, 0xBB, 0xBF)
+
+function Expand-Placeholders([byte[]]$bytes, [hashtable]$tokens) {
+    # Preserve the byte order mark the file arrived with, or its absence. Reading as utf-8-sig and
+    # writing back plain utf-8 silently drops it and turns a one-line change into a whole-file
+    # diff -- the mistake EvergineTeam/WebGPU.NET#24 had to correct.
+    $hasBom = $bytes.Length -ge 3 -and
+              $bytes[0] -eq $script:Utf8Bom[0] -and
+              $bytes[1] -eq $script:Utf8Bom[1] -and
+              $bytes[2] -eq $script:Utf8Bom[2]
+
+    $offset = if ($hasBom) { 3 } else { 0 }
+    $text = [System.Text.Encoding]::UTF8.GetString($bytes, $offset, $bytes.Length - $offset)
+    $expanded = Expand-Tokens $text $tokens
+
+    # Line endings come through untouched: replacing a token cannot introduce or remove one.
+    $encoded = (New-Object System.Text.UTF8Encoding($false)).GetBytes($expanded)
+    if ($hasBom) {
+        return [byte[]]($script:Utf8Bom + $encoded)
+    }
+
+    return $encoded
 }
 
 # ---------------------------
@@ -218,7 +258,8 @@ foreach ($groupName in $selectedGroups) {
         
         foreach ($file in $groupFiles) {
             $overwrite = if ($file.PSObject.Properties.Name -contains 'overwrite') { $file.overwrite } else { "always" }
-            $entries += [pscustomobject]@{ src = $file.src; dst = $file.dst; overwrite = $overwrite }
+            $substitute = if ($file.PSObject.Properties.Name -contains 'substitute') { [bool]$file.substitute } else { $false }
+            $entries += [pscustomobject]@{ src = $file.src; dst = $file.dst; overwrite = $overwrite; substitute = $substitute }
         }
     }
     else {
@@ -227,6 +268,11 @@ foreach ($groupName in $selectedGroups) {
 }
 
 Write-Host "Loaded $($entries.Count) entries from manifest."
+
+# Reported once here because -DryRun returns before any file is read: this is the only place a
+# dry run can tell you what a real run would have written.
+$tokens = @{ YEAR = $Year }
+Write-Host "Tokens: $((($tokens.GetEnumerator() | Sort-Object Name | ForEach-Object { "{{$($_.Name)}}=$($_.Value)" }) -join ', '))"
 
 # -------------------------------------------------------
 # Sync files (always overwrite unless -DryRun)
@@ -266,7 +312,7 @@ foreach ($e in $entries) {
     }
 
     if ($DryRun) {
-        Write-Host "(dry-run) $src  →  $dst (overwrite: $overwrite)"
+        Write-Host "(dry-run) $src  →  $dst (overwrite: $overwrite$(if ($e.substitute) { ', substituted' }))"
         continue
     }
 
@@ -277,8 +323,12 @@ foreach ($e in $entries) {
             $skipped++
             continue
         }
+        if ($e.substitute) {
+            $bytes = Expand-Placeholders $bytes $tokens
+        }
+
         [System.IO.File]::WriteAllBytes($dstFull, $bytes)
-        Write-Host "Updated: $dst (overwrite: $overwrite)"
+        Write-Host "Updated: $dst (overwrite: $overwrite$(if ($e.substitute) { ', substituted' }))"
         $updated++
     }
     catch {
