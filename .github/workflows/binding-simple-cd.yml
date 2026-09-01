@@ -103,6 +103,11 @@ on:
         required: false
         type: string
         default: '6.x'
+      nuget-source:
+        description: 'NuGet source for publishing packages'
+        required: false
+        type: string
+        default: 'https://api.nuget.org/v3/index.json'
       enable-email-notifications:
         description: 'Enable email notifications on failure'
         required: false
@@ -115,7 +120,7 @@ on:
         default: 'ubuntu-latest'
     secrets:
       NUGET_UPLOAD_TOKEN:
-        description: 'NuGet.org API key for publishing packages'
+        description: 'NuGet publish credential (NuGet API key or Azure Artifacts PAT)'
         required: true
       WAVE_SENDGRID_TOKEN:
         description: 'SendGrid API key for email notifications'
@@ -144,7 +149,7 @@ jobs:
           nuget-version: ${{ inputs.nuget-version }}
 
       - name: Generate bindings
-        uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-bindings-dotnet@main
+        uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-bindings-dotnet@v2
         with:
           script-path: ${{ inputs.bindings-script-path }}
           generator-project: ${{ inputs.generator-project }}
@@ -156,7 +161,7 @@ jobs:
           restore-workloads: ${{ inputs.restore-workloads }}
 
       - name: Generate NuGets
-        uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-nugets-dotnet@main
+        uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-nugets-dotnet@v2
         with:
           script-path: ${{ inputs.nugets-script-path }}
           helpers-path: ${{ inputs.helpers-path }}
@@ -177,17 +182,18 @@ jobs:
 
       - name: Publish NuGet
         if: ${{ success() && inputs.publish-enabled == true }}
-        shell: pwsh
-        env:
-          token: ${{ secrets.NUGET_UPLOAD_TOKEN }}
-        run: |
-          cd ${{ inputs.output-folder }}
-          ls *.nupkg
-          dotnet nuget push "**/*.nupkg" --skip-duplicate --no-symbols -k "$env:token" -s https://api.nuget.org/v3/index.json
+        uses: EvergineTeam/evergine-standards/.github/actions/nuget-publish@v2
+        with:
+          packages-folder: ${{ inputs.output-folder }}
+          source-url: ${{ inputs.nuget-source }}
+          auth-token: ${{ secrets.NUGET_UPLOAD_TOKEN }}
+          package-pattern: "**/*.nupkg"
+          skip-duplicate: 'true'
+          no-symbols: 'true'
 
       - name: Send failure notification
         if: ${{ failure() && inputs.enable-email-notifications == true }}
-        uses: EvergineTeam/evergine-standards/.github/actions/send-notification-email@main
+        uses: EvergineTeam/evergine-standards/.github/actions/send-notification-email@v2
         with:
           sendgrid-token: ${{ secrets.WAVE_SENDGRID_TOKEN }}
           from-email: ${{ secrets.EVERGINE_EMAIL }}

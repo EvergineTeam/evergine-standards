@@ -20,7 +20,7 @@ on:
 
 jobs:
   ci:
-    uses: EvergineTeam/evergine-standards/.github/workflows/addon-common-ci.yml@main
+    uses: EvergineTeam/evergine-standards/.github/workflows/addon-common-ci.yml@v2
     with:
       assets-project: "YourAddon.Assets/YourAddon.Assets.csproj"  # Path to your assets .csproj
       nuget-projects: |                                           # NuGet projects (one per line)

@@ -17,7 +17,7 @@ on:
 jobs:
   cd:
     if: github.event_name != 'schedule' || github.ref == 'refs/heads/main'
-    uses: EvergineTeam/evergine-standards/.github/workflows/addon-simple-cd.yml@main
+    uses: EvergineTeam/evergine-standards/.github/workflows/addon-simple-cd.yml@v2
     with:
       assets-project: "YourAddon.Assets/YourAddon.Assets.csproj"      # Path to your assets .csproj
       nuget-projects: |                                               # Optional: NuGet projects (one per line)
@@ -32,8 +32,8 @@ jobs:
       publish-packages: ${{ !inputs.skip-assets-publishing }}        # Publish both NuGet packages and .wepkg assets
       enable-email-notifications: true                               # Send email on failure
     secrets:
-      NUGET_UPLOAD_TOKEN: ${{ secrets.NUGET_UPLOAD_TOKEN }}          # NuGet.org API key
-      AZURE_STORAGE_SAS_TOKEN: ${{ secrets.AZURE_STORAGE_SAS_TOKEN }} # Azure Storage SAS token
+      NUGET_UPLOAD_TOKEN: ${{ secrets.EVERGINE_NUGETORG_TOKEN  }}     # NuGet.org API key
+      AZURE_STORAGE_SAS_TOKEN: ${{ secrets.PUBLISH_PREVIEW_BLOB_CONTAINER_SAS_TOKEN }} # Azure Storage SAS token
       WAVE_SENDGRID_TOKEN: ${{ secrets.WAVE_SENDGRID_TOKEN }}        # SendGrid for email notifications
       EVERGINE_EMAILREPORT_LIST: ${{ secrets.EVERGINE_EMAILREPORT_LIST }}
       EVERGINE_EMAIL: ${{ secrets.EVERGINE_EMAIL }}

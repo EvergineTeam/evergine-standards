@@ -116,7 +116,7 @@ jobs:
           dotnet-version: ${{ inputs.dotnet-version }}
 
       - name: Generate bindings
-        uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-bindings-dotnet@main
+        uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-bindings-dotnet@v2
         with:
           script-path: ${{ inputs.bindings-script-path }}
           generator-project: ${{ inputs.generator-project }}
@@ -141,7 +141,7 @@ jobs:
 
       - name: Generate NuGets
         if: inputs.nuget-artifacts == true
-        uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-nugets-dotnet@main
+        uses: EvergineTeam/evergine-standards/.github/actions/binding-generate-nugets-dotnet@v2
         with:
           script-path: ${{ inputs.nugets-script-path }}
           helpers-path: ${{ inputs.helpers-path }}
