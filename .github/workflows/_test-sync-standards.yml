@@ -38,8 +38,11 @@ jobs:
     - name: Setup PowerShell and Pester
       shell: pwsh
       run: |
-        # Install Pester 5.7.1+ for consistency with local development
-        Install-Module -Name Pester -Force -SkipPublisherCheck -Scope CurrentUser -AllowClobber
+        # Pin to 5.x for consistency with local development. An upper bound, not
+        # just a floor: Pester 6 removed Invoke-Pester's legacy -OutputFile and
+        # -OutputFormat parameters, which tests/Run-Tests.ps1 still passes, so an
+        # unbounded install broke this job the day Pester 6 shipped.
+        Install-Module -Name Pester -MaximumVersion 5.99.99 -Force -SkipPublisherCheck -Scope CurrentUser -AllowClobber
         Write-Host "Pester installed successfully" -ForegroundColor Green
         
     - name: Run sync-standards Tests
