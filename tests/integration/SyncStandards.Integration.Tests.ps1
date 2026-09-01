@@ -195,3 +195,49 @@ Describe "Schema v2 Groups Integration Tests" {
         }
     }
 }
+
+Describe "Placeholder Substitution Integration Tests" {
+
+    It "Should substitute tokens only in the entry that asks for it" {
+        $MockRepoPath = Join-Path $PSScriptRoot "..\fixtures\mock-repo"
+        $TestWorkspace = Join-Path ([System.IO.Path]::GetTempPath()) "sync-substitute-test-$(Get-Random)"
+        $ManifestPath = Join-Path $PSScriptRoot "..\fixtures\manifest-with-substitute.json"
+        $MockManifestPath = Join-Path $MockRepoPath "sync-manifest.json"
+        $OriginalManifest = $null
+
+        try {
+            New-Item -ItemType Directory -Path $TestWorkspace -Force | Out-Null
+
+            $OriginalManifest = Get-Content $MockManifestPath -Raw
+            Copy-Item $ManifestPath $MockManifestPath -Force
+
+            # A real run, not a dry run: the point is what lands on disk. -Year is pinned so the
+            # assertion does not depend on when the suite happens to run.
+            & $script:SyncScriptPath -SourcePath $MockRepoPath -Root $TestWorkspace -Manifest "sync-manifest.json" -Year 2099
+
+            # The entry that opted in
+            $substituted = Get-Content (Join-Path $TestWorkspace "LICENSE") -Raw
+            $substituted | Should -Match "Copyright \(c\) 2099 Evergine Team"
+            $substituted | Should -Not -Match "\{\{YEAR\}\}"
+
+            # Same source file, no flag: the token must survive untouched. This is what proves the
+            # substitution is opt-in per entry rather than global.
+            $raw = Get-Content (Join-Path $TestWorkspace "LICENSE.raw") -Raw
+            $raw | Should -Match "\{\{YEAR\}\}"
+            $raw | Should -Not -Match "2099"
+
+            # And a binary entry has to come through byte for byte.
+            $srcIcon = [System.IO.File]::ReadAllBytes((Join-Path $MockRepoPath "assets\icon.png"))
+            $dstIcon = [System.IO.File]::ReadAllBytes((Join-Path $TestWorkspace "assets\icon.png"))
+            ($dstIcon -join ',') | Should -Be ($srcIcon -join ',')
+        }
+        finally {
+            if ($OriginalManifest) {
+                Set-Content -Path $MockManifestPath -Value $OriginalManifest -NoNewline
+            }
+            if (Test-Path $TestWorkspace) {
+                Remove-Item -Path $TestWorkspace -Recurse -Force -ErrorAction SilentlyContinue
+            }
+        }
+    }
+}

@@ -6,8 +6,9 @@
     "groups": {
         "core": [
             {
-                "src": "LICENSE",
-                "dst": "LICENSE"
+                "src": "templates/LICENSE",
+                "dst": "LICENSE",
+                "substitute": true
             },
             {
                 "src": "assets/nuget-icon.png",

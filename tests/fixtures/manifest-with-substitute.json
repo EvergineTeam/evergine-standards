@@ -1,0 +1,23 @@
+{
+    "schema": "2",
+    "defaultGroups": [
+        "core"
+    ],
+    "groups": {
+        "core": [
+            {
+                "src": "templates/LICENSE",
+                "dst": "LICENSE",
+                "substitute": true
+            },
+            {
+                "src": "templates/LICENSE",
+                "dst": "LICENSE.raw"
+            },
+            {
+                "src": "assets/icon.png",
+                "dst": "assets/icon.png"
+            }
+        ]
+    }
+}
